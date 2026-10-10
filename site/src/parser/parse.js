@@ -52,6 +52,7 @@ export function parseWorld({ world, files, images = [] }) {
   const add = (key, id) => { const k = key.toLowerCase(); if (!(k in nameIndex)) nameIndex[k] = id; };
   for (const e of Object.values(entities)) if (e.name.toLowerCase() !== 'voice') add(e.name, e.id);
   for (const e of Object.values(entities)) { add(e.title, e.id); e.aliases.forEach((a) => add(a, e.id)); }
+  for (const e of Object.values(entities)) add(e.id, e.id); // path links, e.g. [[Characters/Mara/voice|voice]]
   const resolve = (name) => (name ? nameIndex[String(name).toLowerCase()] ?? null : null);
   const resolveImage = (ref) => {
     const n = firstLink(ref) ?? (typeof ref === 'string' ? ref : null);

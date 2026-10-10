@@ -1,6 +1,6 @@
 ---
 type: thread
-world: "[[{{World}}]]"
+world: "[[World]]"
 kind: minor-character | gap-in-time | offstage-event | rumour | unexplored-place | unresolved-tension | what-if | backstory
 anchors: []          # chapters/notes where the thread shows up
 characters: []

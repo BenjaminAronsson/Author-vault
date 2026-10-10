@@ -1,6 +1,6 @@
 ---
 type: culture
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []           # endonym / exonyms (what they call themselves vs others call them)
 languages: []
 religions: []

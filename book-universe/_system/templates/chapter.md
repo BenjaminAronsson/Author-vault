@@ -1,6 +1,6 @@
 ---
 type: chapter
-world: "[[{{World}}]]"
+world: "[[World]]"
 story: "[[Story]]"
 when: B1/C01
 in_world: ""

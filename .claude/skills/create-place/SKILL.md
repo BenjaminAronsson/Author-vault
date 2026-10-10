@@ -26,3 +26,12 @@ If an image path is given (or the user offers one), copy it to `<World>/_assets/
 5. Suggest next steps: `/create-plot` set here, or `/become` someone who remembers it.
 
 **Version it:** finish with `tools/world-repo.sh commit <World> "Created <type> <Name>"` (local only, never pushed).
+
+**Write it with the tool, not by hand:**
+1. Put the result in a patch (same format as extraction: `entities`, `timeline`, `rows`, `items`, `paragraphs`, `memories`, `perspectives`, `glossary`) at `book-universe/<World>/.vault/patches/create-<slug>.json`.
+2. Apply it:
+   ```
+   node tools/vault.mjs apply "<World>" <patch> --chapter <placement, e.g. B1-C05> --canon expansion
+   ```
+   The tool creates notes from the templates, adds relations on both sides, and keeps the exact format.
+3. Only prose sections that don't fit the patch format (e.g. a long legend) may be edited directly, by appending to the note the tool created.

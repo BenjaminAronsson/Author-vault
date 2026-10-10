@@ -1,6 +1,6 @@
 ---
 type: magic
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []           # what different peoples call it
 hardness: medium      # hard (explicit rules, readers can predict) | medium | soft (mysterious, wonder over rules)
 source: ""            # gods, blood, land, stars, words, spirits, bargains, the user's own life…

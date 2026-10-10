@@ -1,6 +1,6 @@
 ---
 type: event
-world: "[[{{World}}]]"
+world: "[[World]]"
 when: B1/C01          # reading order; for pre-story history use era instead
 in_world: ""          # in-world date / year
 era: ""               # "[[Era]]" if historical
@@ -32,4 +32,4 @@ _How different people or factions tell it. Can be wrong, self-serving or mytholo
 ## Traces left
 _Scars, ruins, songs, holidays, laws, taboos, objects that remain._
 ## Memories of this
-- [[{{Name}} - {{Event}}]]
+_Each character's memory of this event is linked here automatically._

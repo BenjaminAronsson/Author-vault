@@ -1,6 +1,6 @@
 ---
 type: era
-world: "[[{{World}}]]"
+world: "[[World]]"
 span: ""             # in-world years, e.g. "312–389 AF"
 order: 1             # position in the chronology
 canon: book

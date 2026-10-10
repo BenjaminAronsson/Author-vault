@@ -1,0 +1,11 @@
+{
+  "attachmentFolderPath": "_assets",
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "alwaysUpdateLinks": true,
+  "showUnsupportedFiles": false,
+  "userIgnoreFilters": [
+    "_sources/",
+    ".vault/"
+  ]
+}

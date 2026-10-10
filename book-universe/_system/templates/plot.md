@@ -1,6 +1,6 @@
 ---
 type: plot
-world: "[[{{World}}]]"
+world: "[[World]]"
 kind: main | subplot | side-story | prequel | sequel | what-if | mystery | romance | heist …
 canon: book          # book (a plotline from the text) | expansion (created)
 origin: ""           # book | created

@@ -4,7 +4,7 @@
 ```
 book-universe/
   _system/            SCHEMA.md, templates/
-  <World>/                    ← its own local git repo (tools/world-repo.sh), never pushed
+  <World>/                    ← its own Obsidian vault (.obsidian/ from _system/obsidian/) and its own local git repo, never pushed
     _sources/<story>/         original file + C01.md, C02.md …, _front.md (read-only after import)
     World.md
     Stories/<story>/Story.md
@@ -32,7 +32,7 @@ book-universe/
 ## Shared frontmatter
 ```yaml
 type: character | location | faction | item | concept | event | memory | story | chapter | expansion | world
-world: "[[World]]"
+world: "[[World]]"      # literally [[World]]: each world is its own vault, so World.md is unique
 aliases: []
 canon: book | expansion | draft
 continuity: main          # or alt-ending, sidestory-x … (list if valid in several)
@@ -146,3 +146,28 @@ Chapter notes' `characters:` and `places:` frontmatter are the fallback for pres
   - **A place's position**: `map: {x: 0.42, y: 0.31}` is a fraction of the map's width and height from the top-left. It is a position on the map of the place's nearest `part_of` ancestor that has its own map, otherwise on the world map. So a tavern inside a city with its own map is positioned on the city map.
   - **Positions are stable**: they're stored in the notes and never redrawn. The World Viewer's **Arrange** mode writes them for you: drag pins, drag in unplaced places, auto-arrange, undo, give a place its own map, use an image as a map.
   - **Geography hints**: write them in prose under `## Where & how › Getting there`, e.g. "two days' ride north of [[Port Kacollia]], across the ford". They help a person (or Claude) place pins sensibly.
+
+## Patches and the `vault` tool
+**Agents never edit notes.** They read a chapter, or a conversation, and write one **JSON patch**. `node tools/vault.mjs apply` writes it into the notes, deterministically:
+- creates missing notes from these templates, with a `voice.md` for every character
+- writes timeline lines in the exact tag format above
+- adds or updates table rows. A Goal's status change is also logged on the timeline.
+- adds relations on **both** sides
+- **checks every quote verbatim** against the chapter, and rejects any that aren't exact
+- cites the chapter on every item, and is append-only and idempotent
+
+| Key | Shape | Written to |
+|---|---|---|
+| `chapter` | `{title, pov, characters[], places[], events[], summary, scenes[], key_lines[{who,text}], state_changes[], threads[]}` | `Stories/<story>/Chapters/<cid>.md` |
+| `entities` | `[{name, type, aliases[], fields{}}]` | new notes from templates, plus aliases |
+| `timeline` | `[{entity, text, at, rel[{to,bond,n}], status, goal[{goal,status}], pov}]` | `## Timeline` |
+| `rows` | `[{entity, section: Goals\|Fears\|Relations, row{…}, update[]}]` | the section's table |
+| `items` | `[{entity, section: Dreams\|Knowledge\|…, text}]` | list items |
+| `paragraphs` | `[{entity, type?, section, text}]`. Use `entity: "<Name>/voice"` for diction and habits, and the world's name for world rules. | appended prose |
+| `quotes` | `[{character, mood, text}]` | `voice.md › Quote bank › ### <mood>` |
+| `memories` | `[{character, event, accuracy, charge, text, divergence}]` | `memories/<Name> - <event>.md` |
+| `perspectives` | `[{target, by, text}]` | `## Perspectives › ### As seen by [[by]]` |
+| `glossary` | `[{term, meaning}]` | `Concepts/Glossary.md` |
+| `style` | `{notes, samples[]}` | `Stories/<story>/Style.md` |
+
+Patches are kept in `<World>/.vault/patches/`, which isn't committed. Re-applying them rebuilds the notes, at no token cost.

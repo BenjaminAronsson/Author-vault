@@ -28,7 +28,7 @@
     store.loading = true; store.error = null;
     try {
       const model = await loadDataWorld(entry);
-      start(model, { kind: 'data', vault: entry.vault });
+      start(model, { kind: 'data' });
     } catch (e) { store.error = e.message; }
     store.loading = false;
   }
@@ -38,7 +38,7 @@
     try {
       const model = await parseWorldGroup(group, (pr) => (store.progress = pr.phase === 'reading' ? `Reading notes… ${pr.done.toLocaleString()} / ${pr.total.toLocaleString()}` : 'Putting the world together…'));
       store.progress = null;
-      start(model, { kind: 'folder', dir: group.dir ?? null, vault: localStorage.getItem('vaultName') ?? 'book-universe' });
+      start(model, { kind: 'folder', dir: group.dir ?? null });
       // keep a copy on this device so it reopens without picking the folder again
       localNote = 'Saving on this device…';
       saveLocal(model, { dir: group.dir ?? null })
@@ -52,7 +52,7 @@
     try {
       const model = await loadLocal(meta.name);
       if (!model) throw new Error(`"${meta.name}" is no longer stored on this device.`);
-      start(model, { kind: 'local', dir: null, vault: localStorage.getItem('vaultName') ?? 'book-universe', savedAt: meta.savedAt });
+      start(model, { kind: 'local', dir: null, savedAt: meta.savedAt });
     } catch (e) { store.error = e.message; }
     store.loading = false;
   }

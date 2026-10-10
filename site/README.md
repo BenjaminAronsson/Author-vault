@@ -43,6 +43,16 @@ The page only needs rebuilding when the viewer code changes. New data just needs
   - With big casts, the web lays out only the people on screen, and the map shows tokens only for who's on the page (with a count for everyone else).
 - **The test worlds** (not committed): `node scripts/make-large-fixture.mjs fixtures/Large/Longsaga`, and `… fixtures/Huge/Omnibus --books 12 --chapters 50 --chars 1600 --memories 6 --voice 600 --images 300 --places 300`.
 
+## Extraction cost (measured)
+On *Harry Potter and the Philosopher's Stone*, chapters 1–3 (3.5–4.7k words each):
+
+| | Tokens per chapter |
+|---|---|
+| Old pipeline (4 agents editing notes) | **458k** (chapter 1, empty vault, and rising as notes grow) |
+| Patch pipeline (2 agents plus `tools/vault.mjs`) | **94k / 92k / 96k**, flat as the world grows |
+
+The 7-book omnibus (199 chapters) comes to ≈ **19 M** instead of 90 M+. `node tools/vault.mjs plan` estimates any range.
+
 ## Develop
 ```
 npm test                   # parser + frontmatter tests on fixtures/Sample

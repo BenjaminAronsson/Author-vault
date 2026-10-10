@@ -1,0 +1,13 @@
+{
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": false,
+  "colorGroups": [
+    { "query": "path:Characters", "color": { "a": 1, "rgb": 9127726 } },
+    { "query": "path:Places", "color": { "a": 1, "rgb": 3108264 } },
+    { "query": "path:Events", "color": { "a": 1, "rgb": 12867626 } },
+    { "query": "path:Factions OR path:Cultures OR path:Religions", "color": { "a": 1, "rgb": 7032744 } },
+    { "query": "path:Stories", "color": { "a": 1, "rgb": 10132630 } }
+  ]
+}

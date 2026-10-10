@@ -1,7 +1,7 @@
 ---
 type: concept
 kind: belief | philosophy | custom | law | art | science | disease | material | other   # magic, technology, religions, creatures, languages & cultures have their own types
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []
 canon: book
 continuity: main

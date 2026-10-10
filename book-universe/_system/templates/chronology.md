@@ -1,6 +1,6 @@
 ---
 type: chronology
-world: "[[{{World}}]]"
+world: "[[World]]"
 calendar: ""         # how years are counted, e.g. "AF = After the Flood"
 tags: [history]
 ---
@@ -13,4 +13,4 @@ _How time is counted, the seasons and festivals, and the different calendars dif
 |---|---|---|
 ## Timeline
 _Ordered by in-world date. One line per event, tagged canon and continuity._
-- **{{year}}** · [[Event]] · `canon:book` · short note
+_One line per dated event, oldest first, e.g. a line with the year, a link to the event note and a short note._

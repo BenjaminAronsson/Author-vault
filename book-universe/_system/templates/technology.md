@@ -1,6 +1,6 @@
 ---
 type: technology
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []
 domain: ""            # tools, weapons, transport, communication, medicine, agriculture, building, energy, craft, computing, war…
 era_introduced: ""    # "[[Era]]" or in-world year

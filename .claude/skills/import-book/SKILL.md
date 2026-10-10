@@ -11,9 +11,9 @@ Book files usually live in `inbox/` (never committed). Check `inbox/` if the use
 
 1. Read `book-universe/_system/SCHEMA.md`.
 2. If the story id is missing, ask for it. Also ask for the title, the reading `order`, the `continuity` (default `main`), and whether this is an alternate version of an existing story.
-3. Convert and split:
+3. Convert and split into a temporary folder:
    ```
-   python3 -I .claude/skills/import-book/convert.py "<file>" "book-universe/<World>/_sources/<story>"
+   python3 -I .claude/skills/import-book/convert.py "<file>" /tmp/convert-<World>
    ```
    Keep the original file next to the sources, never in the repo (`.gitignore` excludes `book-universe/*`, epub and pdf).
    - **Single book**: the script prints its chapters (`Cxx · words · heading — title`). If the splits look wrong (a prologue merged in, parts treated as chapters, chapters missing), rerun with `--pattern '<regex>'` that matches this book's headings, or fix the boundaries by hand.
@@ -23,12 +23,24 @@ Book files usually live in `inbox/` (never committed). Check `inbox/` if the use
      - Example (tested): a 3,623-page Harry Potter omnibus PDF split into 7 books, all titled correctly from the master contents, and 199 chapters, all correct.
    Show the final chapter list to the user.
 4. Detect the book's **language** and **POV style** from the first chapter.
-5. Scaffold from `_system/templates/` (only what's missing):
-   - `book-universe/<World>/World.md` (world.md)
-   - `book-universe/<World>/Stories/<story>/Story.md` (story.md): fill story_id, title, order, continuity, language, pov_style, and `extracted_through: ""`
-   - the folders `Characters/ Places/ Factions/ Items/ Concepts/ Events/ History/ Cultures/ Languages/ Religions/ Creatures/ Magic/ Technology/ Plots/ Threads/ Expansions/`, plus `Concepts/Glossary.md` and `History/Chronology.md` (template `chronology.md`)
-   - add the story to `World.md` frontmatter `stories` and to `## Stories`
-5b. **Version the world:** if it's new, run `tools/world-repo.sh init <World>` to create its local repo, which can never be pushed. Then commit the import: `tools/world-repo.sh commit <World> "Imported <title> (<n> chapters)"`.
+5. **Scaffold with the tool** (never by hand, so every world has the same structure):
+   - **New world:**
+     ```
+     node tools/vault.mjs init-world "<World>"
+     ```
+     This creates the standard folders, `World.md`, the Glossary and Chronology, its own Obsidian vault (`.obsidian/`, with `_sources/` hidden), and its local git repo.
+   - **One book:**
+     ```
+     node tools/vault.mjs add-story "<World>" <id> --from <convert-output-dir> --title "<title>" --order <n>
+     ```
+   - **Omnibus:**
+     ```
+     node tools/vault.mjs import-books "<World>" <convert-output-dir> [B1,B3,…]
+     ```
+     This adds every confirmed book as its own story, using the titles and order from `books.tsv`.
+   - Then run `tools/world-repo.sh check`.
+   - Tell the user to open `book-universe/<World>/` in Obsidian with **Open folder as vault**. Each world is its own vault.
+5b. **Commit the import:** `tools/world-repo.sh commit <World> "Imported <title> (<n> chapters)"`.
 6. Tell the user the size and the next step. For big imports, say what extraction will cost before suggesting it:
    - **Words** come from the index. Source tokens ≈ words × 1.35.
    - **Extraction** reads every chapter about 3 times (chronicler, psychologist and worldbuilder), plus existing notes for context. Estimate roughly **5–8 × the source tokens** in total.

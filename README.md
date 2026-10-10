@@ -9,15 +9,15 @@ It runs on [Claude Code](https://claude.com/claude-code): the slash commands and
 |---|---|
 | `.claude/skills/` | slash commands: `/start`, `/import-book`, `/extract-chapter`, `/become`, `/create …`, `/find-threads`, `/expand-story`, `/visualize`, `/world-check` |
 | `.claude/agents/` | specialists the commands hand work to (extraction, acting, story writing) |
-| `book-universe/_system/` | the schema and note templates every world follows |
+| `book-universe/_system/` | the schema, note templates and default Obsidian settings every world gets |
 | `site/` | the World Viewer, a static web app (see `site/README.md`) |
-| `tools/` | `world-repo.sh` and git guards |
+| `tools/` | `vault.mjs` (the deterministic engine: context packs, applying patches, lint, briefings, scaffolding), `world-repo.sh` and git guards |
 
 **Not in this repo (by design):** your worlds and your books. Each world in `book-universe/<World>/` is its own **local** git repo that cannot be pushed. Book files go in `inbox/`, which is ignored. The viewer on GitHub Pages is an empty app: you open your own world folder in the browser, and nothing is uploaded.
 
 ## Getting started
 1. Install [Claude Code](https://claude.com/claude-code) and open this folder in it.
-2. Open `book-universe/` as a vault in Obsidian.
+2. Each world in `book-universe/<World>/` is **its own Obsidian vault**: open that folder in Obsidian ("Open folder as vault"). Book text (`_sources/`) is hidden from search and graph.
 3. Run `/start` for guided onboarding to your first world: import a book, build one from scratch, or explore the example.
 
 The viewer needs Node 22 or newer:

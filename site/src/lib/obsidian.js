@@ -1,6 +1,7 @@
-export function obsidianUrl(vault, world, path) {
-  if (!vault || !path) return null;
-  return `obsidian://open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(`${world}/${path.replace(/\.md$/, '')}`)}`;
+/** Each world is its own Obsidian vault, named after the world folder. */
+export function obsidianUrl(world, path) {
+  if (!world || !path) return null;
+  return `obsidian://open?vault=${encodeURIComponent(world)}&file=${encodeURIComponent(path.replace(/\.md$/, ''))}`;
 }
 
 /** "B1-C05" → "B1/C05" (the /become argument format). */

@@ -1,6 +1,6 @@
 ---
 type: location
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []
 canon: book
 continuity: main

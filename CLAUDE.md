@@ -15,14 +15,19 @@ Books become **living worlds** in an Obsidian vault (`book-universe/`). You can 
 ## Layout
 | Path | What | Git |
 |---|---|---|
-| `book-universe/_system/` | schema and note templates | this repo |
-| `book-universe/<World>/` | one world: notes, `_assets/` images, `_sources/` book text | **its own local repo, never pushed** (`tools/world-repo.sh`) |
+| `book-universe/_system/` | schema, note templates, default Obsidian settings for new worlds (`obsidian/`) | this repo |
+| `book-universe/<World>/` | one world = **its own Obsidian vault** (open this folder in Obsidian): notes, `_assets/` images, `_sources/` book text (hidden in Obsidian) | **its own local repo, never pushed** (`tools/world-repo.sh`) |
 | `inbox/` | drop book files here (pdf, epub, txt) | ignored |
 | `site/` | World Viewer (static app, GitHub Pages) | this repo |
 | `.claude/` | skills (slash commands) and agents | this repo |
 | `tools/` | `world-repo.sh`, push guards (`hooks/`) | this repo |
 
+**New worlds only through the tool:** `node tools/vault.mjs init-world "<World>"` (or `tools/world-repo.sh init`, which repairs an existing folder). Never create world folders or notes by hand. `tools/world-repo.sh check` verifies that every world is its own Obsidian vault with the standard folders, a local unpushable repo, and that nothing else sits in `book-universe/`.
+
 This repo (the tool) is the only thing pushed to GitHub. `.gitignore` and `tools/hooks/root/pre-push` keep world content and book files out of it.
+
+## The `vault` tool (deterministic, zero tokens)
+`node tools/vault.mjs plan | context | apply | lint | briefing | done | init-world | add-story | import-books`. Agents understand and write patches, and this tool does everything else: writing notes in exact format, verbatim quote checks, two-sided relations, continuity lint, spoiler-safe `/become` briefings, progress and commits. Patch format: `SCHEMA.md › Patches`.
 
 ## Commands
 - **Start:** `/start` gives guided onboarding to a first world.
@@ -36,6 +41,6 @@ This repo (the tool) is the only thing pushed to GitHub. `.gitignore` and `tools
 - **See it:** `/visualize <World>` opens the World Viewer. See `site/README.md`.
 
 ## Agents (`.claude/agents/`)
-- **Extraction** (bulk, on `model: sonnet` to save tokens): chronicler, character-psychologist, worldbuilder, continuity-keeper.
+- **Extraction** (Sonnet): `chronicler` (story and world) and `character-psychologist` (people and voice). Both read a chapter plus a compact context pack and write a JSON patch. `continuity-keeper` handles lint's judgment calls once per book.
 - **Living characters:** character-actor, lore-scribe.
 - **Expansion:** story-scout, story-weaver.

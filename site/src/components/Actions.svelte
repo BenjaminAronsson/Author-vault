@@ -6,8 +6,7 @@
 
   let { id } = $props();
   const e = $derived(store.model?.entities[id]);
-  const vault = $derived(store.entry?.vault ?? store.source?.vault ?? 'book-universe');
-  const url = $derived(e ? obsidianUrl(vault, store.model.world, e.path) : null);
+  const url = $derived(e ? obsidianUrl(store.model.world, e.path) : null);
   let done = $state('');
   async function cp(kind, text) { await copy(text); done = kind; setTimeout(() => (done = ''), 1500); }
   const become = $derived(e ? `/become ${e.title} at ${stepArg(store.sequence[store.idx])}${store.cont !== 'main' ? ' ' + store.cont : ''} ${store.model.world}` : '');

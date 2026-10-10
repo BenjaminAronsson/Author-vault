@@ -1,6 +1,6 @@
 ---
 type: faction
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []
 canon: book
 continuity: main

@@ -1,6 +1,6 @@
 ---
 type: religion
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []
 kind: ""              # pantheon, monotheism, ancestor cult, spirit worship, philosophy-faith, mystery cult, heresy/sect of …
 parent: ""            # "[[Religion]]" if it's a sect or offshoot

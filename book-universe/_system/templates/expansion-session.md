@@ -1,6 +1,6 @@
 ---
 type: expansion
-world: "[[{{World}}]]"
+world: "[[World]]"
 character: "[[{{Name}}]]"
 at: B1/C05
 continuity: main

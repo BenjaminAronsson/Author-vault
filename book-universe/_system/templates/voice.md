@@ -1,7 +1,7 @@
 ---
 type: voice
 character: "[[{{Name}}]]"
-world: "[[{{World}}]]"
+world: "[[World]]"
 language: ""
 tags: [voice]
 image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/

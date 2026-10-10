@@ -1,6 +1,6 @@
 ---
 type: language
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []
 family: ""            # related / parent languages
 speakers: []          # cultures, factions, characters

@@ -1,6 +1,6 @@
 ---
 type: story
-world: "[[{{World}}]]"
+world: "[[World]]"
 story_id: B1
 title: ""
 order: 1

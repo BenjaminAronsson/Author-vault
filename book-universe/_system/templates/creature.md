@@ -1,6 +1,6 @@
 ---
 type: creature
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []           # names in different languages / regions
 category: ""          # beast, monster, spirit, people, plant, swarm, undead, divine…
 sapience: animal      # animal | clever | sapient | unknown

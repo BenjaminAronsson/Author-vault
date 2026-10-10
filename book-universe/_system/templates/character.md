@@ -1,6 +1,6 @@
 ---
 type: character
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []
 canon: book
 continuity: main
@@ -81,7 +81,7 @@ _How they move, carry themselves, what they notice first, how they smell/sound t
 _Who they were at the start → who they are now → where they seem to be heading._
 
 ## Voice
-See [[{{Name}} - voice]].
+See [[Characters/{{Name}}/voice|voice]].
 
 ## Relations
 | With | Bond (family / love / rival / ally / enemy …) | What they feel | What the other feels back | Changes over time |
@@ -99,5 +99,5 @@ _What they know, and from when (gates /become)._
 ### Objective
 ## Memories
 ```dataview
-LIST FROM "{{World}}/Characters/{{Name}}/memories" SORT when ASC
+LIST FROM "Characters/{{Name}}/memories" SORT when ASC
 ```

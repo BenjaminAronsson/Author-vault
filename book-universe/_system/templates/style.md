@@ -1,6 +1,6 @@
 ---
 type: style
-world: "[[{{World}}]]"
+world: "[[World]]"
 story: "[[Story]]"
 language: ""
 tags: [style]

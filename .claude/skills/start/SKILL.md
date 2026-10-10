@@ -30,7 +30,7 @@ Then ask with AskUserQuestion what they want to do first:
 
 ## 2b. Build from scratch
 Go **world first, then people**:
-1. Ask for the world's name and a one-line feeling ("a drowned salt-marsh village where the sea keeps what it takes"). Create `book-universe/<World>/` from `_system/templates/world.md`, plus the folders listed in `/import-book` step 5. Then run `tools/world-repo.sh init "<World>"`: the world gets its own local history, and it can never be pushed.
+1. Ask for the world's name and a one-line feeling ("a drowned salt-marsh village where the sea keeps what it takes"). Run `node tools/vault.mjs init-world "<World>"`. It creates the folders and starting notes, makes the folder **its own Obsidian vault** (tell the user to open `book-universe/<World>/` in Obsidian with "Open folder as vault"), and creates its local git repo, which can never be pushed.
 2. Offer the foundations, one at a time, and let the user skip any: `/create-history` (the past in broad strokes), `/create-culture`, `/create-magic` or `/create-technology` (or "no magic"), `/create-place` (one key location).
 3. Run `/create-character` for the first protagonist. Make sure they get goals, fears, dreams and at least one relation.
 4. Suggest a second character tied to the first, so the relationship web has something to show.

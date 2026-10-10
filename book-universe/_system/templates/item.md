@@ -1,6 +1,6 @@
 ---
 type: item
-world: "[[{{World}}]]"
+world: "[[World]]"
 aliases: []
 canon: book
 continuity: main
