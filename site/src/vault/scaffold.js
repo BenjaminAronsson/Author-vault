@@ -1,5 +1,5 @@
 // New worlds, stories and notes from the templates.
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, renameSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, renameSync, copyFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { setField, setRaw } from '../lib/frontmatter.js';
 
@@ -29,7 +29,7 @@ export function addStory(worldDir, templatesDir, id, { from = null, title = id, 
   const src = join(worldDir, '_sources', id);
   mkdirSync(src, { recursive: true });
   let moved = 0;
-  if (from) for (const f of readdirSync(from)) if (/^(C\d+|_front)\.md$/.test(f)) { renameSync(join(from, f), join(src, f)); moved++; }
+  if (from) for (const f of readdirSync(from)) if (/^(C\d+|_front)\.md$/.test(f)) { moveFile(join(from, f), join(src, f)); moved++; }
   const sdir = join(worldDir, 'Stories', id);
   mkdirSync(join(sdir, 'Chapters'), { recursive: true });
   let t = fill(readFileSync(join(templatesDir, 'story.md'), 'utf8'), { World: worldDir.split('/').filter(Boolean).pop(), title });
@@ -43,4 +43,9 @@ export function addStory(worldDir, templatesDir, id, { from = null, title = id, 
 /** Parses convert.py's books.tsv → [{ id, title, chapters, words }] */
 export function readBooks(tsvPath) {
   return readFileSync(tsvPath, 'utf8').trim().split('\n').slice(1).map((l) => { const [id, title, chapters, words] = l.split('\t'); return { id, title, chapters: +chapters, words: +words }; });
+}
+
+/** rename, falling back to copy+delete across filesystems (EXDEV) */
+function moveFile(a, b) {
+  try { renameSync(a, b); } catch (e) { if (e.code !== 'EXDEV') throw e; copyFileSync(a, b); unlinkSync(a); }
 }
