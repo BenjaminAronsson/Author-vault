@@ -30,3 +30,6 @@ Then open `site/dist/index.html`.
 - **This repo:** versions the tool. It's the only thing pushed.
 - **Each world:** `tools/world-repo.sh init "<World>"` gives it its own local history. The commands commit after every change (an import, each extracted chapter, created content, conversations).
 - **Guards:** `tools/world-repo.sh check` confirms every world is versioned and can't be pushed. The tool repo's `pre-push` hook refuses to push if world content or book files are ever tracked. After cloning, enable it with `git config core.hooksPath tools/hooks/root`.
+
+## License
+All rights reserved. See `LICENSE`. The code is public to view, but it may not be used, copied, modified or distributed without permission. Your worlds and the books they come from are never part of this repo.
