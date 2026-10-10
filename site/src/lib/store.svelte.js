@@ -56,7 +56,6 @@ class Store {
     return out;
   });
   book = $derived(this.books.find((b) => this.idx >= b.start && this.idx <= b.end) ?? this.books[0] ?? null);
-  jumpOpen = $state(false);
   follow = $state(null); // character the views keep in focus
   playing = $state(false);
   speed = $state(1800); // ms per chapter while playing

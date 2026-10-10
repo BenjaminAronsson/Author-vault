@@ -1,7 +1,11 @@
 {
   "name": "world-viewer",
   "private": true,
+  "description": "Static viewer for Author Vault worlds: reading bookmark, timeline, relationship web, characters, maps. No backend; worlds stay on your device.",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/build-data.mjs --demo --vault fixtures/Sample Saltmarrow",

@@ -1,29 +1,41 @@
 # Author Vault
 
-Obsidian vault at `book-universe/` that holds extracted **worlds, stories and characters** from books, kept alive so characters can be "stepped into" and expanded.
+Books become **living worlds** in an Obsidian vault (`book-universe/`). You can step into the characters, expand them, and follow the story in the World Viewer.
 
 ## Core rules (all skills and agents)
-1. **Read `book-universe/_system/SCHEMA.md` first.** It is the single source of truth for folders, frontmatter, and note shapes.
-2. **Append, never overwrite.** New information becomes a Timeline / Perspective / quote entry with a source link. Contradictions are recorded, not resolved by deletion.
-3. **Always cite.** Every claim links its source: `[[<story>-Cxx]]` for book, `[[EXP-…]]` for expansion sessions.
-4. **Perspective is data.** Objective narration vs what a character believes are stored separately (`pov:`). Memories are per character and may be wrong.
-5. **Canon tiers.** `canon: book` (from text) · `canon: expansion` (from /become sessions) · `canon: draft` (author ideas). Never promote expansion to book.
-6. **Keep the voice.** Quote the book verbatim, keep the book's language, spelling, dialect and invented words. Don't flatten into neutral summary-speak.
-7. `<World>/_sources/` (the book text) is read-only after import.
-8. **Versioning:** every world is its own **local** git repo (`tools/world-repo.sh`), and is **never pushed**: pushes are blocked by config and a hook. After any change to a world (import, each extracted chapter, created content, a /become session), commit it with `tools/world-repo.sh commit <World> "<what changed>"`. The tool repo (`author-vault/`: site, .claude, CLAUDE.md, book-universe/_system) is the only thing that goes to GitHub, and it never contains world content (see `.gitignore` and `tools/hooks/root/pre-push`).
+1. **Read `book-universe/_system/SCHEMA.md` first.** It's the single source of truth for folders, frontmatter and note shapes.
+2. **Append, never overwrite.** New information becomes a Timeline, Perspective or quote entry with a source link. Contradictions are recorded, not resolved by deletion.
+3. **Always cite.** Every claim links its source: `[[<story>-Cxx]]` for the book, `[[EXP-…]]` for expansion sessions.
+4. **Perspective is data.** The objective narration and what a character believes are stored separately (`pov:`). Memories are per character and may be wrong.
+5. **Canon tiers.** `canon: book` comes from the text, `canon: expansion` from /become sessions and created content, `canon: draft` from author ideas. Never promote expansion to book.
+6. **Keep the voice.** Quote the book verbatim, and keep its language, spelling, dialect and invented words.
+7. **Book text is read-only:** `<World>/_sources/` doesn't change after import.
+8. **Worlds are versioned locally and never pushed.** Each `<World>/` is its own git repo. After any change to a world (an import, each extracted chapter, created content, a /become session), run `tools/world-repo.sh commit "<World>" "<what changed>"`.
 
 ## Layout
-- `book-universe/`: the Obsidian vault. `_system/` holds shared templates and the schema (tracked in this repo). Each `<World>/` is its own local git repo, with the book text in `<World>/_sources/`.
-- `inbox/`: drop book files here (pdf, epub, txt). Never committed.
-- `site/`: the World Viewer. `tools/`: world repos and git guards. `.claude/`: skills and agents.
+| Path | What | Git |
+|---|---|---|
+| `book-universe/_system/` | schema and note templates | this repo |
+| `book-universe/<World>/` | one world: notes, `_assets/` images, `_sources/` book text | **its own local repo, never pushed** (`tools/world-repo.sh`) |
+| `inbox/` | drop book files here (pdf, epub, txt) | ignored |
+| `site/` | World Viewer (static app, GitHub Pages) | this repo |
+| `.claude/` | skills (slash commands) and agents | this repo |
+| `tools/` | `world-repo.sh`, push guards (`hooks/`) | this repo |
 
-## Workflow
-New here? `/start` gives a guided onboarding that walks step by step to a first living world.
+This repo (the tool) is the only thing pushed to GitHub. `.gitignore` and `tools/hooks/root/pre-push` keep world content and book files out of it.
 
-`/import-book <file> <World>` → `/extract-chapter <World> <story> all` → `/world-check <World>` → `/become <Character> [at <story>/Cxx] [continuity]`
+## Commands
+- **Start:** `/start` gives guided onboarding to a first world.
+- **Read a book in:**
+  1. `/import-book <file> <World>` (handles omnibus editions)
+  2. `/extract-chapter <World> <story> all`
+  3. `/world-check <World>`
+- **Live in it:** `/become <Character> [at <story>/Cxx] [continuity]` talks to a character as of that point in the story.
+- **Create:** `/create [type] <World> [seed]` routes to the matching `create-*` skill: character, object, place, faction, event, history, concept, language, culture, religion, creature, magic, technology, plot.
+- **Expand:** `/find-threads <World>` → `/create-plot` → `/expand-story <World> "<Thread or Plot>"`
+- **See it:** `/visualize <World>` opens the World Viewer. See `site/README.md`.
 
-Create & expand: `/create [type] <World> [seed]` (router for everything below) · `/create-character <World> [seed]` · `/create-object <World> [seed]` · `/create-place <World> [seed]` · `/create-faction <World> [seed]` · `/create-event <World> [seed]` · `/create-history <World> [focus]` · `/create-concept <World> [kind] [seed]` · `/create-language <World> [seed]` · `/create-culture <World> [seed]` · `/create-religion <World> [seed]` · `/create-creature <World> [seed]` · `/create-magic <World> [seed]` · `/create-technology <World> [seed]` · `/create-plot <World> [thread|premise]` · `/find-threads <World>` → `/expand-story <World> "<Thread>"`
-
-See it: `/visualize <World>` builds the data for the static **World Viewer** (`site/dist/index.html`): reading-bookmark timeline, relationship web, character pages, places & history, portrait upload. Viewer code lives in `site/` (see `site/README.md`). It can be hosted on GitHub Pages as an **empty app**: worlds are never committed (see `.gitignore`) and are opened from your own folder in the browser.
-
-Agents in `.claude/agents/`: chronicler, character-psychologist, worldbuilder, continuity-keeper (extraction) · character-actor, lore-scribe (living characters) · story-scout, story-weaver (expansion).
+## Agents (`.claude/agents/`)
+- **Extraction** (bulk, on `model: sonnet` to save tokens): chronicler, character-psychologist, worldbuilder, continuity-keeper.
+- **Living characters:** character-actor, lore-scribe.
+- **Expansion:** story-scout, story-weaver.

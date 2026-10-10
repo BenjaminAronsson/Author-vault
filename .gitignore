@@ -24,6 +24,9 @@ _site/
 site/fixtures/Large/
 site/fixtures/Huge/
 
+# Personal Claude Code permissions
+.claude/settings.local.json
+
 # OS / editor
 .DS_Store
 .obsidian/workspace*.json

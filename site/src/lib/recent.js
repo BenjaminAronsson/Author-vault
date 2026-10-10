@@ -14,7 +14,7 @@ function tx(mode, fn) {
   });
 }
 /** Folder handles from the private sandbox (OPFS) can't be stored safely: Chromium crashes reading them back. */
-export async function persistable(handle) {
+async function persistable(handle) {
   try { return handle && !(await (await navigator.storage.getDirectory()).resolve(handle)); } catch { return !!handle; }
 }
 /** Folder handles live in their own store and are only read on demand (Reopen/Refresh), never at page load. */

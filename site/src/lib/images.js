@@ -1,6 +1,6 @@
 // Portrait/image upload: resize in the browser, write into the vault (folder mode) or keep it pending in IndexedDB.
 import { store } from './store.svelte.js';
-import { setField, setRaw, addListItem } from './frontmatter.js';
+import { setField, addListItem } from './frontmatter.js';
 
 const TYPE_FOLDER = { character: 'characters', location: 'places', faction: 'factions', item: 'items', creature: 'creatures', religion: 'religions', culture: 'cultures', world: 'world', magic: 'magic', technology: 'technology', concept: 'concepts', language: 'languages', event: 'events', era: 'history' };
 const slug = (s) => s.normalize('NFKD').replace(/[^\w-]+/g, '-').replace(/^-|-$/g, '').toLowerCase();

@@ -2,8 +2,7 @@
   import { store } from '../lib/store.svelte.js';
   import Avatar from '../components/Avatar.svelte';
   import EntityLink from '../components/EntityLink.svelte';
-  import { wikilinks } from '../parser/markdown.js';
-  import { chapterRef, stripLinks } from '../parser/markdown.js';
+  import { wikilinks, chapterRef, stripLinks } from '../parser/markdown.js';
   import WorldMap from '../components/WorldMap.svelte';
   import TravelGraph from '../components/TravelGraph.svelte';
 
