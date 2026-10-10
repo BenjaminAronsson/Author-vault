@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Refuse to push the tool repo if any world content or book file is tracked.
+cd "$(git rev-parse --show-toplevel)"
+bad="$(git ls-files | grep -E '^book-universe/' | grep -vE '^book-universe/_system/' || true)"
+books="$(git ls-files | grep -iE '\.(pdf|epub|mobi|azw3)$|^[^/]+\.txt$' || true)"
+big="$(git ls-files -z | xargs -0 -I{} sh -c 'test -f "{}" && s=$(wc -c < "{}") && [ "$s" -gt 10000000 ] && echo "{} ($s bytes)"' || true)"
+if [ -n "$bad$books$big" ]; then
+  echo "✋ Push blocked: world content or book files are tracked in the tool repo:" >&2
+  printf '%s\n' $bad $books "$big" | sed '/^$/d; s/^/   /' >&2
+  echo "   Remove them with: git rm --cached <path>   (worlds live in their own local repos)" >&2
+  exit 1
+fi

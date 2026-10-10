@@ -1,0 +1,29 @@
+# ───────────────────────────────────────────────────────────────────────────────
+# author-vault (the TOOL repo: viewer, Claude skills/agents, templates).
+# Worlds are separate LOCAL repos inside book-universe/ and are never pushed.
+# ───────────────────────────────────────────────────────────────────────────────
+
+# Worlds: each has its own local repo (tools/world-repo.sh). Only shared templates/schema are tracked here.
+book-universe/*
+!book-universe/_system/
+
+# Incoming books (pdf/epub/txt…): drop them in inbox/, never committed
+inbox/
+*.pdf
+*.epub
+*.mobi
+*.azw3
+/*.txt
+
+# Build output and dependencies
+site/node_modules/
+site/dist/
+_site/
+
+# Generated test worlds (regenerate with site/scripts/make-large-fixture.mjs)
+site/fixtures/Large/
+site/fixtures/Huge/
+
+# OS / editor
+.DS_Store
+.obsidian/workspace*.json

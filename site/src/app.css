@@ -1,0 +1,71 @@
+:root {
+  --paper: #f7f3ea;
+  --paper-2: #efe8d9;
+  --card: #fffdf8;
+  --ink: #2a2620;
+  --ink-2: #5d564b;
+  --ink-3: #8c8476;
+  --rule: #ddd4c2;
+  --accent: #8a3b2e;          /* book red: selection, bookmark */
+  --exp: #6b4fa8;             /* expansion */
+  --pos: #2f6fa8;             /* warm feelings (blue = colour-blind safe vs orange) */
+  --neg: #c4582a;             /* cold feelings */
+  --neu: #9a9286;
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgb(40 30 10 / 6%), 0 6px 20px rgb(40 30 10 / 6%);
+  /* expansion: soft tint behind text; stripes only on small graphic marks */
+  --exp-tint: color-mix(in srgb, var(--exp) 7%, var(--card));
+  --hatch: repeating-linear-gradient(135deg, color-mix(in srgb, var(--exp) 16%, transparent) 0 3px, transparent 3px 7px);
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  --paper: #1c1a17;
+  --paper-2: #24211d;
+  --card: #2a2622;
+  --ink: #ece4d4;
+  --ink-2: #c2b8a6;
+  --ink-3: #8f8676;
+  --rule: #3c3731;
+  --accent: #e0846e;
+  --exp: #a98ce6;
+  --pos: #6aa8dc;
+  --neg: #e58a5c;
+  --neu: #7d766b;
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 6px 20px rgb(0 0 0 / 25%);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { font-family: var(--serif); font-weight: 600; line-height: 1.2; margin: 0 0 .4em; }
+h1 { font-size: 2rem; } h2 { font-size: 1.35rem; } h3 { font-size: 1.05rem; }
+a { color: inherit; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.btn { background: var(--card); border: 1px solid var(--rule); border-radius: 999px; padding: .3rem .8rem; font-size: .85rem; display: inline-flex; gap: .35rem; align-items: center; white-space: nowrap; }
+.btn:hover { border-color: var(--ink-3); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.chip { display: inline-flex; align-items: center; gap: .3rem; font-size: .75rem; padding: .1rem .5rem; border-radius: 999px; background: var(--paper-2); color: var(--ink-2); border: 1px solid var(--rule); }
+.card { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem 1.1rem; }
+.muted { color: var(--ink-3); }
+.small { font-size: .82rem; }
+.label { font: 600 .7rem/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: .5rem; }
+.link { background: none; border: 0; padding: 0; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; text-align: left; }
+.link:hover { text-decoration-color: var(--accent); }
+.exp { position: relative; }
+.exp-mark { font: 700 .6rem/1 var(--sans); letter-spacing: .06em; color: var(--exp); border: 1px solid var(--exp); border-radius: 3px; padding: 1px 3px; vertical-align: middle; }
+.future { opacity: .4; }
+.quote { font-family: var(--serif); font-style: italic; font-size: 1.05rem; }
+.prose { font-family: var(--serif); font-size: 1.02rem; line-height: 1.6; }
+.prose p { margin: .4em 0; }
+.prose table { border-collapse: collapse; font-family: var(--sans); font-size: .85rem; margin: .5rem 0; }
+.prose td, .prose th { border-bottom: 1px solid var(--rule); padding: .3rem .6rem; text-align: left; vertical-align: top; }
+.prose blockquote { margin: .5rem 0; padding-left: .8rem; border-left: 3px solid var(--rule); color: var(--ink-2); }
+.prose .wl { color: var(--accent); cursor: pointer; text-decoration: none; border-bottom: 1px dotted currentColor; }
+.prose .wl.missing { color: var(--ink-3); cursor: default; }
+.grid { display: grid; gap: 1rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
