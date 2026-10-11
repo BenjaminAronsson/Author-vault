@@ -1,30 +1,27 @@
 <script>
-  // Ancestors above, the person and their spouses in the middle, descendants below. People appear when they are
-  // born at the bookmark and turn grey when they have died; living people stay hidden unless shown.
+  // Ancestors above, the person with spouses and siblings in the middle, descendants below (or a pedigree, or
+  // descendants only: lib/familyLayout.js). People appear when they are born at the bookmark and turn grey when
+  // they have died; living people stay hidden unless shown.
   import { store } from '../lib/store.svelte.js';
-  import { kinIndex, familyTree, lifespan, lifeLine, kinDetail } from '../lib/kin.js';
+  import { kinIndex, familyTree, lifeLine, kinDetail } from '../lib/kin.js';
+  import { layoutFamily } from '../lib/familyLayout.js';
   import { parseDate } from '../lib/dates.js';
   import Avatar from './Avatar.svelte';
   import PanZoom from './PanZoom.svelte';
 
   // viewHeight: the full Family view gives the tree the screen; compact (person pages) keeps a fixed size
-  let { focus, up = 2, down = 2, onpick = (id) => store.open(id), compact = false, viewHeight = null } = $props();
+  let { focus, up = 2, down = 2, style = 'tree', onpick = (id) => store.open(id), compact = false, viewHeight = null } = $props();
   const idx = $derived((store.version, kinIndex(store.model)));
-  const tree = $derived(familyTree(store.model, idx, focus, { up, down, keep: (id) => id === focus || store.visible(id) }));
+  const tree = $derived(familyTree(store.model, idx, focus, {
+    up: style === 'descendants' ? 0 : up, down: style === 'ancestors' ? 0 : down, siblings: style === 'tree' && !compact,
+    keep: (id) => id === focus || store.visible(id),
+  }));
 
   const W = $derived(compact ? 132 : 156), H = $derived(compact ? 64 : 76), GX = 30, GY = $derived(compact ? 44 : 56);
-  const widest = $derived(Math.max(1, ...tree.rows.map((r) => r.ids.length)));
-  const width = $derived(widest * (W + GX) + GX);
-  const height = $derived(tree.rows.length * (H + GY) + GY / 2);
-  const pos = $derived.by(() => {
-    const p = {};
-    tree.rows.forEach((r, ri) => {
-      const rowW = r.ids.length * (W + GX) - GX;
-      const x0 = (width - rowW) / 2;
-      r.ids.forEach((id, k) => (p[id] = { x: x0 + k * (W + GX), y: GY / 4 + ri * (H + GY) }));
-    });
-    return p;
-  });
+  const lay = $derived(layoutFamily(tree, idx, focus, { style, W, H, GX, GY, spousesOf: tree.spousesOf }));
+  const pos = $derived(lay.nodes);
+  const width = $derived(lay.width), height = $derived(lay.height);
+  const ids = $derived(Object.keys(pos));
   const now = $derived(store.chapter?.date ?? null);
   const dead = (id) => {
     if (/dead|död/.test(store.snap?.status[id] ?? '')) return true;
@@ -38,32 +35,36 @@
 </script>
 
 <div class="ft" class:compact>
-  {#key focus + up + down}
+  {#key focus + up + down + style}
   <PanZoom height={viewHeight ?? Math.min(height + 8, 360)} fit={!!viewHeight} fitMax={1.4}>
   <div class="canvas" style:width={`${width}px`} style:height={`${height}px`}>
     <svg width={width} height={height} aria-hidden="true">
-      {#each tree.edges as e (e.from + e.to)}
-        {@const a = pos[e.from]}{@const b = pos[e.to]}{@const d = detail(e.to, e.from)}
-        {#if a && b}
-          <path class="conf-{d.confidence ?? 'none'}" d={`M${a.x + W / 2},${a.y + H} C${a.x + W / 2},${a.y + H + GY / 2} ${b.x + W / 2},${b.y - GY / 2} ${b.x + W / 2},${b.y}`}><title>{store.name(e.from)} → {store.name(e.to)}{d.type ? ` · ${d.type}` : ''}{d.confidence ? ` · ${d.confidence}` : ''}</title></path>
-          {#if BADGE[d.type]}
-            <g class="badge {d.type}" transform={`translate(${(a.x + b.x) / 2 + W / 2},${(a.y + H + b.y) / 2})`}><title>{BADGE[d.type][1]}</title><circle r="9" /><text dy="3.5" text-anchor="middle">{BADGE[d.type][0]}</text></g>
+      {#each lay.buses as bus (bus.parents.join() + bus.children.join())}
+        <path class="bus" d={bus.drop} />
+        {#if bus.bar}<path class="bus" d={bus.bar} />{/if}
+        {#each bus.stubs as st (st.child)}
+          {@const ds = bus.parents.map((p) => detail(st.child, p))}{@const d = ds.find((x) => x.confidence && x.confidence !== 'belagd') ?? ds[0]}{@const ty = ds.find((x) => BADGE[x.type])?.type}
+          <path class="bus conf-{d.confidence ?? 'none'}" d={st.path}><title>{bus.parents.map((p) => store.name(p)).join(' & ')} → {store.name(st.child)}{ty ? ` · ${ty}` : ''}{d.confidence ? ` · ${d.confidence}` : ''}</title></path>
+          {#if ty}
+            <g class="badge {ty}" transform={`translate(${st.at.x},${st.at.y})`}><title>{BADGE[ty][1]}</title><circle r="9" /><text dy="3.5" text-anchor="middle">{BADGE[ty][0]}</text></g>
           {/if}
-        {/if}
+        {/each}
       {/each}
-      {#each tree.spouses as [s1, s2] (s1 + s2)}
-        {@const a = pos[s1]}{@const b = pos[s2]}{@const d = detail(s1, s2)}
-        {#if a && b}
-          {@const x1 = Math.min(a.x, b.x) + W}{@const x2 = Math.max(a.x, b.x)}{@const y = a.y + H / 2}
-          <line class="sp conf-{d.confidence ?? 'none'}" x1={x1} y1={y} x2={x2} y2={y} />
-          <g class="ring" transform={`translate(${(x1 + x2) / 2},${y})`}><title>Gifta{d.from ? ` ${d.from}` : ''}{d.confidence ? ` · ${d.confidence}` : ''}</title><circle r="10" /><circle class="rg" cx="-2.6" r="4" /><circle class="rg" cx="2.6" r="4" /></g>
-          {#if d.from}<text class="yr" x={(x1 + x2) / 2} y={y - 13} text-anchor="middle">{parseDate(d.from)?.year ?? d.from}</text>{/if}
-        {/if}
+      {#each lay.marriages as mg (mg.a + mg.b)}
+        {@const d = detail(mg.a, mg.b)}{@const cx = (mg.x1 + mg.x2) / 2}{@const cy = (mg.y1 + mg.y2) / 2}
+        <line class="sp conf-{d.confidence ?? 'none'}" x1={mg.x1} y1={mg.y1} x2={mg.x2} y2={mg.y2} />
+        <g class="ring" transform={`translate(${cx},${cy})`}><title>Gifta{d.from ? ` ${d.from}` : ''}{d.confidence ? ` · ${d.confidence}` : ''}</title><circle r="10" /><circle class="rg" cx="-2.6" r="4" /><circle class="rg" cx="2.6" r="4" /></g>
+        {#if d.from}<text class="yr" x={lay.horiz ? cx + 14 : cx} y={lay.horiz ? cy + 3.5 : cy - 13} text-anchor={lay.horiz ? 'start' : 'middle'}>{parseDate(d.from)?.year ?? d.from}</text>{/if}
       {/each}
     </svg>
     {#each tree.rows as r (r.gen)}
-      {#if genLabel(r.gen) && !compact}<span class="gl" style:top={`${pos[r.ids[0]].y - 15}px`}>{genLabel(r.gen)}</span>{/if}
-      {#each r.ids as id (id)}
+      {@const first = r.ids.find((x) => pos[x])}
+      {#if first && genLabel(r.gen) && !compact}
+        {#if lay.horiz}<span class="gl" style:left={`${pos[first].x}px`} style:top="0px">{genLabel(r.gen)}</span>
+        {:else}<span class="gl" style:top={`${pos[first].y - 15}px`}>{genLabel(r.gen)}</span>{/if}
+      {/if}
+    {/each}
+      {#each ids as id (id)}
         {@const e = store.model.entities[id]}
         <button class="node" data-entity={id} class:focus={id === focus} class:dead={dead(id)} class:living={e.living}
           style:left={`${pos[id].x}px`} style:top={`${pos[id].y}px`} style:width={`${W}px`} style:height={`${H}px`}
@@ -72,7 +73,6 @@
           <span class="txt"><span class="n">{e.title.replace(/\s*\([^)]*\)\s*$/, '')}</span><span class="y">{lifeLine(e)}{dead(id) ? ' †' : ''}</span></span>
         </button>
       {/each}
-    {/each}
   </div>
   </PanZoom>
   {/key}
@@ -82,7 +82,7 @@
       <span><i class="ln"></i> belagd</span><span><i class="ln trolig"></i> trolig</span><span><i class="ln hypotes"></i> hypotes</span><span>† död · streckad ram = levande</span>
     </div>
   {/if}
-  {#if tree.rows.length === 1 && tree.rows[0].ids.length === 1}<p class="muted small empty">No family recorded yet{store.idx < store.sequence.length - 1 ? ' at this point in time' : ''}.</p>{/if}
+  {#if ids.length === 1}<p class="muted small empty">{style === 'ancestors' ? 'No ancestors' : style === 'descendants' ? 'No descendants' : 'No family'} recorded yet{store.idx < store.sequence.length - 1 ? ' at this point in time' : ''}.</p>{/if}
 </div>
 
 <style>
@@ -90,7 +90,7 @@
   .canvas { position: relative; margin: 0 auto; }
   .canvas > svg { position: absolute; inset: 0; pointer-events: none; }
   .ring, .badge { pointer-events: all; cursor: help; }
-  path { fill: none; stroke: var(--ink-3); stroke-width: 1.5; opacity: .7; }
+  path { fill: none; stroke: var(--ink-3); stroke-width: 1.5; opacity: .75; stroke-linejoin: round; }
   .sp { stroke: var(--accent); stroke-width: 2; }
   .conf-trolig { stroke-dasharray: 6 4; }
   .conf-hypotes { stroke-dasharray: 1.5 4; stroke-linecap: round; }

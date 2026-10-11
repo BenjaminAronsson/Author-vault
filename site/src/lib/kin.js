@@ -23,10 +23,10 @@ const get = (idx, k, id) => [...(idx[k].get(id) ?? [])];
 
 /**
  * Generations around a person: rows from the oldest ancestors (negative) to the youngest descendants.
- * → { rows: [{ gen, ids }], edges: [{ from: parent, to: child }], spouses: [[a, b]] }
+ * → { rows: [{ gen, ids }], edges: [{ from: parent, to: child }], spouses: [[a, b]], siblings, gen: {id: gen}, order: {id: birth rank}, spousesOf }
  * `keep(id)` filters people out (e.g. not yet born at the bookmark, or living and hidden).
  */
-export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => true } = {}) {
+export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => true, siblings = false } = {}) {
   const sort = byBirth(model);
   const placed = new Map(); // id → gen
   const rows = new Map();
@@ -52,6 +52,8 @@ export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => t
     for (const c of [...next]) for (const s of spousesOf(c)) if (put(s, g, c)) next.push(s);
     layer = next;
   }
+  // brothers and sisters on the person's row (not their families)
+  const sibs = siblings ? get(idx, 'siblings', focus).sort(sort).filter((s) => put(s, 0)) : [];
   // seat spouses beside their partner: one spouse to the right; with several, the first marriage left, later ones right
   for (const [g, ids] of rows) {
     const out = [];
@@ -67,7 +69,9 @@ export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => t
     for (const c of get(idx, 'children', id)) if (placed.get(c) === g + 1) edges.push({ from: id, to: c });
     for (const s of get(idx, 'spouses', id)) if (placed.get(s) === g && id < s) spouses.push([id, s]);
   }
-  return { rows: [...rows.entries()].sort((a, b) => a[0] - b[0]).map(([gen, ids]) => ({ gen, ids })), edges, spouses };
+  const order = {};
+  [...placed.keys()].sort(sort).forEach((id, i) => (order[id] = i));
+  return { rows: [...rows.entries()].sort((a, b) => a[0] - b[0]).map(([gen, ids]) => ({ gen, ids })), edges, spouses, siblings: sibs, gen: Object.fromEntries(placed), order, spousesOf };
 }
 
 /** "1843–1910", "f. 1843", "† 1910" from born/died as written. */
