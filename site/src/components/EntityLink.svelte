@@ -5,7 +5,7 @@
 </script>
 
 {#if e}
-  <button class="link" class:future={store.isFuture(id)} onclick={() => store.open(id)}>{label ?? e.title}{#if e.canon === 'expansion'}&nbsp;<span class="exp-mark" title="Expansion">EXP</span>{/if}</button>
+  <button class="link" data-entity={id} class:future={store.isFuture(id)} onclick={() => store.open(id)}>{label ?? e.title}{#if e.canon === 'expansion'}&nbsp;<span class="exp-mark" title="Expansion">EXP</span>{/if}</button>
 {:else}
   <span class="muted">{label ?? id}</span>
 {/if}

@@ -21,6 +21,7 @@
   import Search from './components/Search.svelte';
   import Coverage from './components/Coverage.svelte';
   import Tour from './components/Tour.svelte';
+  import InfoCard from './components/InfoCard.svelte';
 
   let theme = $state(localStorage.getItem('theme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
   $effect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('theme', theme); });
@@ -94,6 +95,16 @@
     return () => { removeEventListener('popstate', onHash); removeEventListener('hashchange', onHash); };
   });
 
+  // right-click on anyone with data-entity → a small info card instead of leaving the view
+  function context(ev) {
+    const t = ev.target.closest?.('[data-entity]');
+    const id = t?.dataset.entity;
+    if (!id || !store.model?.entities[id]) return;
+    ev.preventDefault();
+    const r = t.getBoundingClientRect();
+    const keyboard = ev.button === 0 && ev.clientX === 0 && ev.clientY === 0; // context-menu key / Shift+F10
+    store.card = { id, x: keyboard ? r.left : ev.clientX, y: keyboard ? r.bottom : ev.clientY };
+  }
   function keys(ev) {
     if (!store.model) return;
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) || ev.target.isContentEditable;
@@ -132,7 +143,7 @@
   }
 </script>
 
-<svelte:window onkeydown={keys} />
+<svelte:window onkeydown={keys} oncontextmenu={context} />
 
 {#if !store.model}
   <Chooser onopen={openData} onfolder={openFolder} onlocal={openLocal} />
@@ -203,6 +214,7 @@
   {#if store.searchOpen}<Search />{/if}
   {#if store.coverageOpen}<Coverage />{/if}
   {#if store.tourOpen}<Tour />{/if}
+  <InfoCard />
 {/if}
 
 <style>

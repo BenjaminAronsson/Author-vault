@@ -17,6 +17,7 @@ class Store {
   cont = $state('main');
   canon = $state([...CANONS]);
   future = $state('hide'); // hide | dim
+  card = $state(null); // { id, x, y } — the right-click info card
   showLiving = $state(false); // genealogy: people marked living: true stay hidden unless asked for
   searchOpen = $state(false);
   coverageOpen = $state(false);

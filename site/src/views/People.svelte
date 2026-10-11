@@ -75,7 +75,7 @@
 
   {#if as === 'graph'}
     <div class="card"><Web {focus} {hops} {mode} recent={chars.length > 30 ? recent || store.sequence.length : null} max={mode === 'full' && chars.length > 30 ? maxFull : null} height={Math.max(420, (typeof window !== 'undefined' ? window.innerHeight : 800) - 260)} onpick={(id) => (focus === id ? store.open(id) : (focus = id))} /></div>
-    <p class="small muted">Click someone to focus them, click again to open their page.</p>
+    <p class="small muted">Click someone to focus them, click again to open their page, right-click for a quick card.</p>
   {:else}
     <div class="card">
       <input class="filter" placeholder="Filter by name…" bind:value={q} aria-label="Filter characters" />
@@ -89,7 +89,7 @@
         </tr></thead>
         <tbody>
           {#each rows as c (c.id)}
-            <tr class:future={store.isFuture(c.id)} class:dead={!!diedBy(c)}>
+            <tr data-entity={c.id} class:future={store.isFuture(c.id)} class:dead={!!diedBy(c)}>
               <td><Avatar id={c.id} size={32} /></td>
               <td><EntityLink id={c.id} label={c.title.replace(/\s*\([^)]*\)\s*$/, '')} />{#if c.living} <span class="chip">living</span>{/if}</td>
               <td class="small num">{lifespan(c) || '—'}{diedBy(c) ? ' †' : ''}</td>
@@ -114,7 +114,7 @@
         <tbody>
           {#each rows as c (c.id)}
             {@const b = bonds(c.id)}
-            <tr class:future={store.isFuture(c.id)}>
+            <tr data-entity={c.id} class:future={store.isFuture(c.id)}>
               <td><Avatar id={c.id} size={32} /></td>
               <td><EntityLink id={c.id} /></td>
               <td class="small">{store.snap?.status[c.id] ?? '—'}</td>

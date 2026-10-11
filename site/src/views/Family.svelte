@@ -37,7 +37,7 @@
   </header>
   {#if focus}
     <div class="card"><FamilyTree {focus} {up} {down} viewHeight={treeH} onpick={(id) => store.go('family', id)} /></div>
-    <p class="small muted">Shown as of <strong>{store.chapter?.id}</strong>: people born later are not shown yet, people who have died are grey. Dashed = living (private).</p>
+    <p class="small muted">Shown as of <strong>{store.chapter?.id}</strong>: people born later are not shown yet, people who have died are grey. Dashed = living (private). Right-click someone for a quick card.</p>
   {:else}
     <p class="muted">Nobody is known at this point in time yet. Move the bookmark forward.</p>
   {/if}

@@ -31,7 +31,7 @@
   }
 </script>
 
-<div class="av" style="--s:{size}px; --h:{hue}" class:over class:ring={ring}
+<div class="av" data-entity={id} style="--s:{size}px; --h:{hue}" class:over class:ring={ring}
   style:--ring={ring}
   ondragover={(ev) => { if (upload) { ev.preventDefault(); over = true; } }}
   ondragleave={() => (over = false)}

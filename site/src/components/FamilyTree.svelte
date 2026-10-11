@@ -65,7 +65,7 @@
       {#if genLabel(r.gen) && !compact}<span class="gl" style:top={`${pos[r.ids[0]].y - 15}px`}>{genLabel(r.gen)}</span>{/if}
       {#each r.ids as id (id)}
         {@const e = store.model.entities[id]}
-        <button class="node" class:focus={id === focus} class:dead={dead(id)} class:living={e.living}
+        <button class="node" data-entity={id} class:focus={id === focus} class:dead={dead(id)} class:living={e.living}
           style:left={`${pos[id].x}px`} style:top={`${pos[id].y}px`} style:width={`${W}px`} style:height={`${H}px`}
           onclick={() => onpick(id)} title={`${e.title}${e.aliases.length ? ` (${e.aliases.join(', ')})` : ''}`}>
           <Avatar {id} size={compact ? 30 : 38} />

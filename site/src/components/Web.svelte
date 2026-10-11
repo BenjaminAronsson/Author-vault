@@ -135,7 +135,7 @@
       {#each nodes as n (n.id)}
         {@const e = store.model.entities[n.id]}
         {@const r = rad(n.id)}
-        <g in:fade={{ duration: 350 }} class="node" class:focus={n.id === focus} class:dead={dead(n.id)} class:future={store.isFuture(n.id)} class:onstage={store.snap?.onStage.includes(n.id)}
+        <g in:fade={{ duration: 350 }} class="node" data-entity={n.id} class:focus={n.id === focus} class:dead={dead(n.id)} class:future={store.isFuture(n.id)} class:onstage={store.snap?.onStage.includes(n.id)}
           tabindex="0" role="button" aria-label={e.title}
           onclick={() => (onpick ? onpick(n.id) : store.open(n.id))}
           onkeydown={(ev) => (ev.key === 'Enter' || ev.key === ' ') && (ev.preventDefault(), onpick ? onpick(n.id) : store.open(n.id))}>

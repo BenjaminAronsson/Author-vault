@@ -44,7 +44,7 @@
     <line x1={l.source.x} y1={l.source.y} x2={l.target.x} y2={l.target.y} class={l.kind} stroke-width={l.kind === 'move' ? 1.5 + l.n * 1.2 : 1} />
   {/each}
   {#each layout.nodes as n (n.id)}
-    <g class="pn" role="button" tabindex="0" onclick={() => store.open(n.id)} onkeydown={(ev) => ev.key === 'Enter' && store.open(n.id)}>
+    <g class="pn" data-entity={n.id} role="button" tabindex="0" onclick={() => store.open(n.id)} onkeydown={(ev) => ev.key === 'Enter' && store.open(n.id)}>
       <circle cx={n.x} cy={n.y} r="9" class:here={store.follow && store.snap?.presence[store.follow]?.place === n.id} />
       <text x={n.x} y={n.y - 15} text-anchor="middle">{store.name(n.id)}</text>
     </g>
