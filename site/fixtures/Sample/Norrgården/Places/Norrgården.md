@@ -7,7 +7,7 @@ continuity: main
 first_seen: "[[arkiv-C02]]"
 sources: ["[[arkiv-C02]]", "[[arkiv-C03]]"]
 tags: [location]
-image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/
+image: "[[norrgarden-1890.webp]]"
 gallery: []
 part_of: "[[Kila socken]]"
 ---

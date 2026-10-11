@@ -120,8 +120,8 @@
     {#each demos as w (w.name)}
       <button class="wcard card demo" onclick={() => onopen(w)}>
         {#if w.image}<img src={`./${w.image}`} alt="" />{/if}
-        <div class="wt">{T.tryDemo}</div>
-        <div class="small muted">{w.title} · {w.chapters} chapters · a tiny example world</div>
+        <div class="wt">{w.genealogy ? T.tryGenealogyDemo : T.tryDemo}</div>
+        <div class="small muted">{w.genealogy ? `${w.title} · ${w.characters} people · a fictional family history` : `${w.title} · ${w.chapters} chapters · a tiny example world`}</div>
       </button>
     {/each}
     {#if recent}

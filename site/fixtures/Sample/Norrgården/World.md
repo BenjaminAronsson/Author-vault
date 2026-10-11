@@ -4,7 +4,7 @@ aliases: []
 canon: book
 stories: []
 tags: [world]
-image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/
+image: "[[norrgarden.webp]]"
 gallery: []
 kind: genealogy
 ---

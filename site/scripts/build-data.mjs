@@ -69,7 +69,7 @@ for (const world of worlds) {
   writeFileSync(join(out, file), `(window.WORLDS ??= {})[${JSON.stringify(world)}] = ${JSON.stringify(model)};\n`);
   const cov = coverage(model);
   const entry = {
-    name: world, file, demo,
+    name: world, file, demo, genealogy: !!model.genealogy,
     generatedAt: model.generatedAt,
     title: model.entities[model.worldEntity]?.title ?? world,
     image: model.imageUrls[model.entities[model.worldEntity]?.image] ?? Object.values(model.imageUrls)[0] ?? null,

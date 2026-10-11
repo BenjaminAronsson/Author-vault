@@ -5,6 +5,7 @@ export const T = {
   navGenealogy: { reader: 'On this date' },
   chooseWorld: 'Choose a world',
   tryDemo: 'Try the Sample world',
+  tryGenealogyDemo: 'Try the family-history example',
   openFolder: 'Open world folder…',
   openFolderHint: 'Quick look: pick a world folder (the one with World.md). Chrome/Edge can also save images back into it.',
   emptyTitle: 'No worlds generated yet',

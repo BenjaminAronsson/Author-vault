@@ -63,3 +63,16 @@ export function lifespan(e) {
   const b = y(e?.born), d = y(e?.died);
   return b && d ? `${b}–${d}` : b ? `f. ${b}` : d ? `† ${d}` : '';
 }
+
+/**
+ * What kind of tie a kin link is, read from the Relations row apply writes ("kin · far" | "biologisk, belagd ([[arkiv-C03]])").
+ * → { type: 'biologisk'|'adoptiv'|'foster'|'styv'|null, confidence: 'belagd'|'trolig'|'hypotes'|null, from: '1866'|null }
+ */
+export function kinDetail(model, a, b) {
+  const rows = [...(model.entities[a]?.relationsTable ?? []).filter((r) => r.with === b), ...(model.entities[b]?.relationsTable ?? []).filter((r) => r.with === a)];
+  const text = rows.map((r) => `${r.bond} ${r.feels} ${r.changes}`).join(' ').toLowerCase();
+  const type = /adoptiv/.test(text) ? 'adoptiv' : /foster/.test(text) ? 'foster' : /styv/.test(text) ? 'styv' : /biologisk/.test(text) ? 'biologisk' : null;
+  const confidence = /hypotes/.test(text) ? 'hypotes' : /trolig/.test(text) ? 'trolig' : /belagd/.test(text) ? 'belagd' : null;
+  const from = /från ([^,)(]+?)(?:,| till| på| \(|$)/.exec(text)?.[1]?.trim() ?? null;
+  return { type, confidence, from };
+}

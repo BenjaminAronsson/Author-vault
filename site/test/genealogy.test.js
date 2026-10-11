@@ -270,3 +270,17 @@ describe('fixes from the end-to-end run', () => {
     expect(b).not.toMatch(/Who they are underneath|devotion \(zealous|\[active \/ achieved/);
   });
 });
+
+describe('relation types in the tree', () => {
+  it('reads type, confidence and marriage year from the Relations rows', async () => {
+    const { kinDetail } = await import('../src/lib/kin.js');
+    apply(HUSFORHOR);
+    apply({ entities: [{ name: 'Erik Svensson', type: 'character' }, { name: 'Lill-Per', type: 'character' }],
+      kin: [{ a: 'Erik Svensson', b: 'Anna Persdotter', kind: 'spouse', from: '1866', confidence: 'trolig' }, { a: 'Anna Persdotter', b: 'Lill-Per', kind: 'parent', role: 'fostermor', detail: 'foster', confidence: 'hypotes' }] }, 'arkiv-C02');
+    const m = model();
+    const id = (n) => m.nameIndex[n.toLowerCase()];
+    expect(kinDetail(m, id('Anna Persdotter'), id('Per Andersson'))).toEqual({ type: 'biologisk', confidence: 'belagd', from: null });
+    expect(kinDetail(m, id('Erik Svensson'), id('Anna Persdotter'))).toMatchObject({ confidence: 'trolig', from: '1866' });
+    expect(kinDetail(m, id('Lill-Per'), id('Anna Persdotter'))).toMatchObject({ type: 'foster', confidence: 'hypotes' });
+  });
+});

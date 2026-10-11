@@ -14,7 +14,7 @@ magic: []          # "[[Magic System]]" + abilities in Skills & flaws
 species: ""        # "[[Creature]]" if not the default people
 pov_character: false
 tags: [character]
-image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/
+image: "[[kajsa.webp]]"
 portraits: []        # [{at: B1-C14, file: "[[mara-scarred.webp]]"}] — shown from that chapter on
 gallery: []
 born: "1815"
