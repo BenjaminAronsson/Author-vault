@@ -7,7 +7,8 @@
   import Avatar from './Avatar.svelte';
   import PanZoom from './PanZoom.svelte';
 
-  let { focus, up = 2, down = 2, onpick = (id) => store.open(id), compact = false } = $props();
+  // viewHeight: the full Family view gives the tree the screen; compact (person pages) keeps a fixed size
+  let { focus, up = 2, down = 2, onpick = (id) => store.open(id), compact = false, viewHeight = null } = $props();
   const idx = $derived((store.version, kinIndex(store.model)));
   const tree = $derived(familyTree(store.model, idx, focus, { up, down, keep: (id) => id === focus || store.visible(id) }));
 
@@ -37,7 +38,8 @@
 </script>
 
 <div class="ft" class:compact>
-  <PanZoom height={Math.min(height + 8, compact ? 360 : 640)}>
+  {#key focus + up + down}
+  <PanZoom height={viewHeight ?? Math.min(height + 8, 360)} fit={!!viewHeight} fitMax={1.4}>
   <div class="canvas" style:width={`${width}px`} style:height={`${height}px`}>
     <svg width={width} height={height} aria-hidden="true">
       {#each tree.edges as e (e.from + e.to)}
@@ -73,6 +75,7 @@
     {/each}
   </div>
   </PanZoom>
+  {/key}
   {#if !compact}
     <div class="legend small muted" aria-label="Legend">
       <span><svg class="lg" width="20" height="20" viewBox="-10 -10 20 20" aria-hidden="true"><circle r="9" class="o" /><circle class="rg" cx="-2.6" r="4" /><circle class="rg" cx="2.6" r="4" /></svg> gifta</span><span><b class="bl">A</b> adoptiv</span><span><b class="bl">F</b> foster</span><span><b class="bl">S</b> styv</span>
