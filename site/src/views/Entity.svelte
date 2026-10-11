@@ -84,7 +84,7 @@
 </article>
 
 <style>
-  .ent { padding: 1rem; display: grid; gap: 1rem; max-width: 1000px; margin: 0 auto; }
+  .ent { padding: 1rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; max-width: 1000px; margin: 0 auto; }
   .head { display: flex; gap: 1.2rem; align-items: flex-start; }
   .head.exp { background: var(--exp-tint); border-left: 4px solid var(--exp); }
   .avcol { display: grid; justify-items: center; flex: none; }

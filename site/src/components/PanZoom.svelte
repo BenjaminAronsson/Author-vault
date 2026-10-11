@@ -11,6 +11,7 @@
   let tx = 0, ty = 0, tk = 1; // where it is heading
   let vp = $state(null), inner = $state(null);
   let panning = $state(false);
+  let full = $state(false); // full screen: the view takes the whole window (and every touch), Esc or ⤡ leaves
   let moved = false, start = null, raf = 0;
   const pointers = new Map();
   let pinch = null;
@@ -133,7 +134,8 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<div class="pz" class:panning class:fill bind:this={vp} style:height={height ? `${height}px` : null}
+<svelte:window onkeydown={(ev) => { if (full && ev.key === 'Escape') { full = false; ev.stopPropagation(); } }} />
+<div class="pz" class:panning class:fill class:full bind:this={vp} style:height={height ? `${height}px` : null}
   tabindex="0" role="application" aria-label="Zoomable view: drag to move, scroll or + and − to zoom, 0 to reset"
   onpointerdown={down} onpointermove={move} onpointerup={up} onpointercancel={up} ondblclick={(ev) => { if (!ev.target.closest?.('button, a, .node')) reset(); }}>
   <div class="pz-inner" class:fit bind:this={inner} style:transform={`translate(${x}px, ${y}px) scale(${k})`}>
@@ -142,12 +144,23 @@
   <div class="pz-ctrl" role="group" aria-label="Zoom">
     <button class="btn" onclick={() => zoomCenter(1.3)} aria-label="Zoom in" title="Zoom in (+)">+</button>
     <button class="btn" onclick={() => zoomCenter(1 / 1.3)} aria-label="Zoom out" title="Zoom out (−)">−</button>
+    <button class="btn" onclick={() => { full = !full; touched = false; requestAnimationFrame(() => reset()); }} aria-pressed={full} aria-label={full ? 'Leave full screen' : 'Full screen'} title={full ? 'Leave full screen (Esc)' : 'Full screen'}>{full ? '⤡' : '⤢'}</button>
     <button class="btn" onclick={reset} aria-label="Reset view" title="Reset (0 or double-click)" disabled={fit ? false : Math.abs(k - 1) < 0.001 && Math.abs(x) < 0.5 && Math.abs(y) < 0.5}>⟲</button>
   </div>
 </div>
 
 <style>
   .pz { position: relative; overflow: hidden; cursor: grab; touch-action: none; outline: none; }
+  /* full screen: above everything, every gesture belongs to the view */
+  .pz.full { position: fixed; inset: 0; z-index: 50; height: 100dvh !important; background: var(--paper); }
+  /* touch screens: one finger up/down still scrolls the page (sideways drags and pinches go to the view);
+     full screen takes every gesture. Controls are always visible and big enough for a finger. */
+  @media (pointer: coarse) {
+    .pz:not(.full) { touch-action: pan-y; }
+    .pz-ctrl { opacity: 1; }
+    .pz-ctrl .btn { width: 2.6rem; height: 2.6rem; font-size: 1.1rem; }
+  }
+  @media (hover: none) { .pz-ctrl { opacity: 1; } }
   .pz.fill, .pz.fill .pz-inner { height: 100%; }
   .pz.fill .pz-inner { width: 100%; }
   .pz.panning { cursor: grabbing; }

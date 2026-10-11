@@ -270,8 +270,16 @@
   .mark.cur { opacity: 1; width: 5px; margin-left: -2px; background: var(--accent); }
   .axis .pin { top: -14px; transform: translateX(-50%); }
   @media (max-width: 800px) {
-    .scrub { grid-template-columns: 1fr auto; }
+    .scrub { grid-template-columns: minmax(0, 1fr) auto; gap: .4rem .6rem; padding: .4rem .6rem calc(.45rem + env(safe-area-inset-bottom)); }
+    .here { min-width: 0; }
     .strips { grid-column: 1 / -1; }
     .pos { display: none; }
+  }
+  /* phones: no labels or captions, finger-sized buttons, the strip below */
+  @media (max-width: 560px) {
+    .label, .cap { display: none; }
+    .ctrl { max-width: 11rem; }
+    .follow select + select { display: none; } /* speed: the default on phones */
+    .nav { min-width: 40px; min-height: 40px; }
   }
 </style>

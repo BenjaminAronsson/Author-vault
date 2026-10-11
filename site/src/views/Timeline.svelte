@@ -18,9 +18,9 @@
   const books = $derived(store.books);
   const zb = $derived(books[zoomIdx ?? books.indexOf(store.book)] ?? books[0]);
   const range = $derived(level === 'saga' ? [0, seq.length - 1] : [zb.start, zb.end]);
-  const LEFT = 130;
+  const LEFT = $derived(cw < 600 ? 86 : 130); // narrow screens: shorter lane labels, more room for chapters
   const n = $derived(range[1] - range[0] + 1);
-  const COL = $derived(level === 'saga' ? Math.max(2, (cw - LEFT - 30) / Math.max(1, n)) : Math.max(30, Math.min(60, (cw - LEFT - 30) / Math.max(1, n))));
+  const COL = $derived(level === 'saga' ? Math.max(2, (cw - LEFT - 30) / Math.max(1, n)) : Math.max(cw < 600 ? 24 : 30, Math.min(60, (cw - LEFT - 30) / Math.max(1, n))));
   const x = (i) => LEFT + (i - range[0]) * COL;
   const width = $derived(Math.max(cw - 4, LEFT + n * COL + 30));
   const ch = (cid) => store.model.chapters[cid];

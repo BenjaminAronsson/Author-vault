@@ -64,7 +64,7 @@
 
 <style>
   .stepphotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .6rem; margin: .6rem 0; }
-  .reader { max-width: 760px; margin: 0 auto; padding: 1.5rem 1.2rem 3rem; display: grid; gap: .9rem; }
+  .reader { max-width: 760px; margin: 0 auto; padding: 1.5rem 1.2rem 3rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: .9rem; }
   h1 { font-size: 2.4rem; margin: 0; }
   .big { font-size: 1.25rem; line-height: 1.65; }
   .cast { display: flex; flex-wrap: wrap; gap: 1rem; }

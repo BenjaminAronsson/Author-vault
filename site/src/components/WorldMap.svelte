@@ -293,7 +293,9 @@
   .tray { display: flex; gap: .3rem; flex-wrap: wrap; }
   .tchip { border: 1px dashed var(--ink-3); background: var(--paper); border-radius: 999px; padding: .15rem .6rem; font-size: .8rem; cursor: grab; touch-action: none; }
   .row { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
-  .vp { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid var(--rule); max-height: 72vh; touch-action: none; }
+  .vp { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid var(--rule); max-height: 72vh; max-height: 72dvh; touch-action: none; }
+  /* touch: one finger up/down scrolls the page unless arranging pins */
+  @media (pointer: coarse) { .vp:not(.arranging) { touch-action: pan-y; } }
   .vp.zoomed { cursor: grab; }
   .stage { position: relative; width: 100%; max-height: 72vh; transform-origin: 0 0; user-select: none; }
   .stage img { display: block; width: 100%; height: 100%; object-fit: contain; }

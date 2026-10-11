@@ -176,7 +176,7 @@
 </div>
 
 <style>
-  .pl { padding: 1rem; display: grid; gap: 1rem; max-width: 1200px; margin: 0 auto; }
+  .pl { padding: 1rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; max-width: 1200px; margin: 0 auto; }
   .tabs { display: flex; gap: .3rem; }
   .tabs .on { background: var(--ink); color: var(--paper); }
   .tspan { margin: .6rem 0 .2rem; }

@@ -75,7 +75,7 @@
 
   {#if as === 'graph'}
     <div class="card"><Web {focus} {hops} {mode} recent={chars.length > 30 ? recent || store.sequence.length : null} max={mode === 'full' && chars.length > 30 ? maxFull : null} height={Math.max(420, (typeof window !== 'undefined' ? window.innerHeight : 800) - 260)} onpick={(id) => (focus === id ? store.open(id) : (focus = id))} /></div>
-    <p class="small muted">Click someone to focus them, click again to open their page, right-click for a quick card.</p>
+    <p class="small muted">Click someone to focus them, click again to open their page, right-click or hold for a quick card.</p>
   {:else}
     <div class="card">
       <input class="filter" placeholder="Filter by name…" bind:value={q} aria-label="Filter characters" />
@@ -132,7 +132,8 @@
 </div>
 
 <style>
-  .people { padding: 1rem; display: grid; gap: .8rem; max-width: 1400px; margin: 0 auto; }
+  .people { padding: 1rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: .8rem; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 760px) { .people { padding: .5rem; } }
   .bar { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; }
   .seg { display: inline-flex; }
   .seg .btn { border-radius: 0; }

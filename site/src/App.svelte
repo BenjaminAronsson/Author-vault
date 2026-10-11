@@ -105,6 +105,25 @@
     const keyboard = ev.button === 0 && ev.clientX === 0 && ev.clientY === 0; // context-menu key / Shift+F10
     store.card = { id, x: keyboard ? r.left : ev.clientX, y: keyboard ? r.bottom : ev.clientY };
   }
+  // touch: hold a finger on someone (500 ms, without moving) → the same card. Android also sends contextmenu; iOS doesn't.
+  let hold = null;
+  function holdStart(ev) {
+    if (ev.pointerType !== 'touch') return;
+    const t = ev.target.closest?.('[data-entity]');
+    if (!t) return;
+    const at = { x: ev.clientX, y: ev.clientY };
+    clearTimeout(hold?.timer);
+    hold = { at, timer: setTimeout(() => {
+      hold.fired = true;
+      context({ target: t, preventDefault() {}, button: 2, clientX: at.x, clientY: at.y });
+      navigator.vibrate?.(10);
+    }, 500) };
+  }
+  function holdMove(ev) { if (hold && !hold.fired && Math.hypot(ev.clientX - hold.at.x, ev.clientY - hold.at.y) > 8) { clearTimeout(hold.timer); hold = null; } }
+  function holdEnd() { if (hold && !hold.fired) { clearTimeout(hold.timer); hold = null; } }
+  // the click that ends a long-press must not also open the page underneath
+  function holdClick(ev) { if (hold?.fired) { ev.preventDefault(); ev.stopPropagation(); hold = null; } }
+  let more = $state(false); // narrow screens: canon filters and continuity in a fold-out row
   function keys(ev) {
     if (!store.model) return;
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) || ev.target.isContentEditable;
@@ -143,7 +162,8 @@
   }
 </script>
 
-<svelte:window onkeydown={keys} oncontextmenu={context} />
+<svelte:window onkeydown={keys} oncontextmenu={(ev) => { if (hold?.fired) { ev.preventDefault(); return; } context(ev); }}
+  onpointerdown={holdStart} onpointermove={holdMove} onpointerup={holdEnd} onpointercancel={holdEnd} onclickcapture={holdClick} />
 
 {#if !store.model}
   <Chooser onopen={openData} onfolder={openFolder} onlocal={openLocal} />
@@ -151,7 +171,7 @@
   {#if store.error}<p class="center err">{store.error}</p>{/if}
 {:else}
   <div class="shell">
-    <header class="top">
+    <header class="top" class:more>
       <button class="brand" onclick={leave} title="Choose another world">
         <span class="mark">◈</span> <span class="wname">{store.model.entities[store.model.worldEntity]?.title ?? store.model.world}</span>
       </button>
@@ -162,6 +182,7 @@
       </nav>
       <button class="btn searchb" data-tour="search" onclick={() => (store.searchOpen = true)} aria-keyshortcuts="Control+K">⌕ {T.search} <kbd>⌘K</kbd></button>
       <span class="grow"></span>
+      <button class="btn ghost morebtn" aria-expanded={more} aria-label="Filters and more" onclick={() => (more = !more)}>⋯</button>
       <span class="ftour" data-tour="filters">
       <div class="filters" role="group" aria-label="Canon filter">
         {#each ['book', 'expansion', 'draft'] as c (c)}
@@ -181,8 +202,8 @@
       <button class="btn ghost" onclick={() => { store.future = store.future === 'hide' ? 'dim' : 'hide'; writeHash(store); }} aria-pressed={store.future === 'dim'} title="Spoilers after the bookmark">
         {store.future === 'hide' ? '🙈' : '👁'} <span class="hide-sm">{store.future === 'hide' ? T.showFuture.hide : T.showFuture.dim}</span></button>
       <button class="btn ghost" data-tour="coverage" onclick={() => (store.coverageOpen = true)} title={T.coverage}>ⓘ <span class="hide-sm">{T.coverage}</span></button>
-      <button class="btn ghost" onclick={() => (store.tourOpen = true)} aria-label="Show the guided tour" title="Guided tour">?</button>
-      <button class="btn ghost" onclick={() => (theme = theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle dark mode">{theme === 'dark' ? '☀' : '☾'}</button>
+      <button class="btn ghost xtra" onclick={() => (store.tourOpen = true)} aria-label="Show the guided tour" title="Guided tour">?</button>
+      <button class="btn ghost xtra" onclick={() => (theme = theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle dark mode">{theme === 'dark' ? '☀' : '☾'}</button>
     </header>
 
     {#if store.fork && store.view !== 'timeline'}
@@ -218,7 +239,7 @@
 {/if}
 
 <style>
-  .shell { height: 100vh; display: flex; flex-direction: column; }
+  .shell { height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   .top { display: flex; align-items: center; gap: .6rem; padding: .5rem 1rem; background: var(--card); border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
   .brand { background: none; border: 0; font: 600 1.15rem var(--serif); display: flex; align-items: center; gap: .3rem; padding: 0 .4rem 0 0; }
   .mark { color: var(--accent); }
@@ -245,9 +266,21 @@
   .center { text-align: center; }
   .err { color: var(--neg); }
   @media (max-width: 1560px) { .hide-sm { display: none; } }
+  .morebtn { display: none; }
   @media (max-width: 760px) {
-    .top { gap: .3rem; padding: .4rem .6rem; }
-    nav { order: 10; width: 100%; overflow-x: auto; }
-    .searchb kbd, .filters, .cont { display: none; }
+    .top { gap: .3rem; padding: .4rem .6rem; padding-top: max(.4rem, env(safe-area-inset-top)); }
+    nav { order: 10; width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .navb { padding: .55rem .8rem; }
+    .top .btn { min-height: 40px; min-width: 40px; }
+    .searchb kbd { display: none; }
+    .morebtn { display: inline-flex; }
+    /* filters fold out under the header instead of disappearing */
+    .ftour { display: none; order: 11; width: 100%; flex-wrap: wrap; padding: .3rem 0; }
+    .top.more .ftour { display: flex; }
+    .xtra { display: none !important; order: 12; }
+    .top.more .xtra { display: inline-flex !important; }
+    .wname { max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .filters { flex-wrap: wrap; }
+    .fchip { padding: .4rem .8rem; }
   }
 </style>

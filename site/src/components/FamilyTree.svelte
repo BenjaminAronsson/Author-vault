@@ -101,7 +101,8 @@
   .badge text { font: 700 10px var(--sans); fill: var(--ink-2); }
   .badge.foster circle { stroke-dasharray: 2 2; }
   .yr { font: 600 10px var(--sans); fill: var(--ink-3); }
-  .legend { display: flex; flex-wrap: wrap; gap: .9rem; justify-content: center; margin-top: .6rem; align-items: center; }
+  .legend { display: flex; flex-wrap: wrap; gap: .4rem .9rem; justify-content: center; margin-top: .6rem; align-items: center; max-width: 100%; }
+  .legend > span { white-space: nowrap; }
   .legend b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--accent); font: 700 10px var(--sans); margin-right: .2rem; }
   .ln { display: inline-block; width: 26px; border-top: 2px solid var(--ink-3); vertical-align: middle; margin-right: .25rem; }
   .ln.trolig { border-top-style: dashed; }

@@ -51,20 +51,21 @@
   </header>
   {#if focus}
     <div class="card" bind:this={card}><FamilyTree {focus} {up} {down} {style} viewHeight={treeH} onpick={(id) => store.go('family', id)} /></div>
-    <p class="small muted">Shown as of <strong>{store.chapter?.id}</strong>: people born later are not shown yet, people who have died are grey. Dashed = living (private). Right-click someone for a quick card.</p>
+    <p class="small muted">Shown as of <strong>{store.chapter?.id}</strong>: people born later are not shown yet, people who have died are grey. Dashed = living (private). Right-click (or hold a finger on) someone for a quick card.</p>
   {:else}
     <p class="muted">Nobody is known at this point in time yet. Move the bookmark forward.</p>
   {/if}
 </section>
 
 <style>
-  .fam { padding: .8rem 1rem; display: grid; gap: .6rem; }
+  .fam { padding: .8rem 1rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: .6rem; }
   .fam .card { padding: .4rem; }
   .bar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
   h1 { margin: 0; }
   select, input { font: inherit; background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; padding: .15rem .3rem; margin-left: .3rem; }
   input { width: 3.2rem; }
   .grow { flex: 1; }
+  @media (max-width: 760px) { .fam { padding: .5rem; } .bar { gap: .5rem; } .bar label:first-of-type { width: 100%; } .bar select { max-width: 70vw; } .seg { display: flex; width: 100%; } .seg .btn { flex: 1 1 0; min-width: 0; justify-content: center; min-height: 40px; } }
   .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
   .seg .btn { border-radius: 0; border: 0; }
   .seg .btn[aria-pressed='true'] { background: var(--accent); color: var(--card); }

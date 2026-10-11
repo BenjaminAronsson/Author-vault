@@ -105,7 +105,7 @@
 
 <style>
   .home { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: 1rem; padding: 1rem; max-width: 1300px; margin: 0 auto; }
-  .main, .side { display: grid; gap: 1rem; align-content: start; }
+  .main, .side { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 1rem; align-content: start; }
   .recap h1 { margin-bottom: .6rem; }
   article { padding: .5rem 0 .5rem .8rem; border-left: 3px solid var(--rule); margin: .4rem 0; opacity: .75; }
   article.current { border-color: var(--accent); opacity: 1; }
@@ -124,5 +124,5 @@
   .bmeter span { display: block; height: 100%; background: var(--accent); }
   .nw { white-space: nowrap; }
   .stars { color: var(--accent); font-size: .75rem; letter-spacing: 1px; }
-  @media (max-width: 900px) { .home { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .home { grid-template-columns: minmax(0, 1fr); } }
 </style>
