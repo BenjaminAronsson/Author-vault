@@ -18,7 +18,8 @@ You get the world, the chapter id (e.g. `B1-C03`), the source chapter path, a **
 {
   "chapter": {
     "title": "…", "pov": "Harry Potter (a character from the cast, or the word omniscient)",
-    "characters": ["…exact names…"], "places": ["…"], "events": ["…"],
+    "characters": ["…on scene…"], "mentioned": ["…only talked about…"],
+    "places": ["…where scenes happen…"], "mentioned_places": ["…"], "events": ["…"],
     "summary": "6–12 sentences close to the text; quote key lines verbatim",
     "scenes": ["one line per scene, in order"],
     "key_lines": [{"who": "Hagrid", "text": "exact words from the chapter"}],
@@ -35,6 +36,7 @@ You get the world, the chapter id (e.g. `B1-C03`), the source chapter path, a **
 
 ## Rules
 - **Names:** use exactly the names in the context pack. Put new spellings in `aliases`.
+- **Present vs. mentioned:** `characters` holds only people physically in a scene of this chapter (they act, speak or are seen). Anyone who is only named, talked about, remembered, written to or dreamt of goes in `mentioned`. The same split applies to `places` and `mentioned_places`. A timeline line about someone who isn't there gets `"presence": "mentioned"` (or `"remembered"`) and no `at`. Example: Anna tells Erik about her brother Olof at the inn, so Anna and Erik go in `characters`, Olof in `mentioned`, and the inn in `places`.
 - **`at` is a place**, a location that exists in the world, never a time ("förra midsommar", "onsdag kväll", "on the third night"). Put time in the `text`. Use `null` when the place isn't named.
 - **New entities:** create one only for what the chapter **names** (types: location, faction, item, concept, creature, event, religion, magic, technology, plot).
 - **Events:** one per distinct happening that changes a state, a relationship or what someone knows. A typical chapter has 4–8, so don't merge separate happenings into one. Use `paragraphs` with sections `What happened (objective)`, `Causes`, `Consequences`, `Versions told`.

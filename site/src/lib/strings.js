@@ -14,6 +14,7 @@ export const T = {
   storySoFar: 'Story so far',
   through: 'through',
   onStage: 'On stage now',
+  mentioned: 'Talked about',
   relChanged: 'Relations changed',
   openThreads: 'Open threads',
   noThreads: 'No open threads at this point.',

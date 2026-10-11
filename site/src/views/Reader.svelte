@@ -9,6 +9,7 @@
 
   const ch = $derived(store.chapter);
   const cast = $derived((store.snap?.onStage ?? []).filter((id) => store.visible(id)));
+  const mentioned = $derived((store.snap?.mentioned ?? []).filter((id) => store.visible(id)));
   const changes = $derived((store.snap?.relChanges ?? []).filter((r) => store.visible(r.from) && store.visible(r.to)));
   const story = $derived(ch ? store.model.stories[ch.story] : null);
   const isDead = (id) => /dead/.test(store.snap?.status[id] ?? '');
@@ -41,6 +42,10 @@
         </button>
       {/each}
     </div>
+    {#if mentioned.length}
+      <div class="label">{T.mentioned}</div>
+      <p class="small mentioned" title="Named or talked about, but not there">{#each mentioned as id, i (id)}{#if i}{', '}{/if}<EntityLink {id} />{/each}</p>
+    {/if}
 
     {#if changes.length}
       <div class="label">In this chapter, feelings changed</div>

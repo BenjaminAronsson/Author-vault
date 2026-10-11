@@ -23,7 +23,8 @@ You get the world, the source id (e.g. `arkiv-C03`), the source file path, a **c
     "archive_ref": "Kila (E) AI:12 s. 47, AID v12345.b52.s47 — exactly as written in the file, or empty",
     "file": "the original file name (first line of the source)",
     "dated": "when the document itself was written: 1840–45, 1868-03-14, ca 1952, or empty",
-    "characters": ["…exact note names…"], "places": ["…"],
+    "characters": ["…people the record is about or who take part (the baptised, parents, witnesses, signatories)…"], "mentioned": ["…people only referred to (a dead relative named in a letter, a former owner)…"],
+    "places": ["…"], "mentioned_places": ["…"],
     "summary": "3–8 sentences: what the source is, who is in it, what it establishes, what is uncertain"
   },
   "entities": [

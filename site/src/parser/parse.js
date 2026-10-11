@@ -93,6 +93,9 @@ export function parseWorld({ world, files, images = [] }) {
       pov: resolve(firstLink(e.fm.pov)),
       characters: wikilinks(e.fm.characters).map(resolve).filter(Boolean),
       places: wikilinks(e.fm.places).map(resolve).filter(Boolean),
+      // named or talked about, but not on scene
+      mentioned: wikilinks(e.fm.mentioned).map(resolve).filter(Boolean),
+      mentionedPlaces: wikilinks(e.fm.mentioned_places).map(resolve).filter(Boolean),
       events: wikilinks(e.fm.events).map(resolve).filter(Boolean),
       summary: (e.sections.Summary?.text ?? '').trim(),
       canon: e.canon ?? story.canon, continuity: e.fm.continuity ?? story.continuity,
@@ -250,10 +253,13 @@ export function parseWorld({ world, files, images = [] }) {
       for (const t of e.timeline) {
         const c = t.step && chapters[t.step];
         if (!c?.timeStep) continue;
-        if (e.type === 'character' && !c.characters.includes(e.id)) c.characters.push(e.id);
+        const offstage = t.tags.presence === 'mentioned' || t.tags.presence === 'remembered';
+        c.mentioned ??= [];
+        if (e.type === 'character' && offstage) { if (!c.characters.includes(e.id) && !c.mentioned.includes(e.id)) c.mentioned.push(e.id); }
+        else if (e.type === 'character' && !c.characters.includes(e.id)) { c.characters.push(e.id); c.mentioned = c.mentioned.filter((x) => x !== e.id); }
         // the step's "summary": what is recorded on this date, with its source (living people left out)
         if (e.fm.living !== true) c.summary += `${c.summary ? '\n' : ''}- [[${e.title}]]: ${t.text}`;
-        if (t.tags.at && entities[t.tags.at] && !c.places.includes(t.tags.at)) c.places.push(t.tags.at);
+        if (!offstage && t.tags.at && entities[t.tags.at] && !c.places.includes(t.tags.at)) c.places.push(t.tags.at);
       }
       const d = e.type === 'event' && (e.fm.date ?? e.fm.in_world);
       if (d != null && chapters[String(d).trim()]?.timeStep) chapters[String(d).trim()].events.push(e.id);

@@ -128,6 +128,7 @@ These are what let a character answer "what did you eat as a child" or "what do 
 Timeline lines may carry these inline tags (backticked) after the step marker. They describe state **from this step on**:
 - `` `at:[[Place]]` ``: where this character/item is now.
 - `` `rel:[[X]]=<bond>/<n>` ``: what *this* character feels toward X. `bond` is a free word (love, rival, kin, ally, enemy, mentor…), `n` runs from -2 (hate) to +2 (devotion). Write one direction only. X's own feeling goes on X's note.
+- `` `presence:<mentioned|remembered>` ``: the character is only talked about or remembered in this step, not on scene. Their whereabouts don't change, and they aren't counted as on stage. Leave it out when they are actually there.
 - `` `status:<alive|dead|missing|legend|deity|…>` ``
 - `` `goal:"<goal text>"=<active|achieved|abandoned|betrayed>` `` (must match a Goals row)
 
@@ -135,7 +136,7 @@ Example:
 ```
 - **B1-C07** · `pov:objective` · `at:[[Old Mill]]` · `rel:[[Tobin]]=ally/-1` · Learns Tobin lied to the reeve. ([[B1-C07]])
 ```
-Chapter notes' `characters:` and `places:` frontmatter are the fallback for presence. Keep them complete.
+Chapter notes' `characters:` and `places:` frontmatter are the fallback for presence and mean **on scene**: who is physically there and where the scenes happen. People and places that are only named, talked about, remembered or written about go in `mentioned:` and `mentioned_places:`. Keep all four complete. A name in both lists counts as present.
 
 ## Images
 - Files live in `<World>/_assets/<type>/<Name>/` (type = characters, places, items, creatures, factions, religions, cultures, world…).
@@ -195,9 +196,9 @@ A world made with `vault init-world "<World>" --kind genealogy` (`World.md`: `ki
 
 | Key | Shape | Written to |
 |---|---|---|
-| `chapter` | `{title, pov, characters[], places[], events[], summary, scenes[], key_lines[{who,text}], state_changes[], threads[]}` | `Stories/<story>/Chapters/<cid>.md` |
+| `chapter` | `{title, pov, characters[] (on scene), mentioned[] (only talked about), places[] (where scenes happen), mentioned_places[], events[], summary, scenes[], key_lines[{who,text}], state_changes[], threads[]}` | `Stories/<story>/Chapters/<cid>.md` |
 | `entities` | `[{name, type, aliases[], fields{}}]` | new notes from templates, plus aliases |
-| `timeline` | `[{entity, text, at, rel[{to,bond,n}], status, goal[{goal,status}], pov}]` | `## Timeline` |
+| `timeline` | `[{entity, text, at, presence (mentioned\|remembered, omit when on scene), rel[{to,bond,n}], status, goal[{goal,status}], pov}]` | `## Timeline` |
 | `rows` | `[{entity, section: Goals\|Fears\|Relations, row{…}, update[]}]` | the section's table |
 | `items` | `[{entity, section: Dreams\|Knowledge\|…, text}]` | list items |
 | `paragraphs` | `[{entity, type?, section, text}]`. Use `entity: "<Name>/voice"` for diction and habits, and the world's name for world rules. | appended prose |

@@ -4,7 +4,7 @@ import { wikilinks, firstLink } from './markdown.js';
 export function parseTimelineLine(line) {
   const m = /^\s*- \*\*(.+?)\*\*\s*(.*)$/.exec(line);
   if (!m) return null;
-  const entry = { marker: m[1].trim(), pov: null, canon: null, tags: { at: null, rel: [], status: null, goal: [] }, text: '', links: [] };
+  const entry = { marker: m[1].trim(), pov: null, canon: null, tags: { at: null, presence: null, rel: [], status: null, goal: [] }, text: '', links: [] };
   const textParts = [];
   for (const part of m[2].split(/\s+·\s+|^·\s*/).map((p) => p.trim()).filter(Boolean)) {
     const t = /^`([a-z_]+):(.*)`$/i.exec(part);
@@ -15,6 +15,7 @@ export function parseTimelineLine(line) {
       case 'canon': entry.canon = val; break;
       case 'at': entry.tags.at = firstLink(val) ?? val; break;
       case 'status': entry.tags.status = val; break;
+      case 'presence': entry.tags.presence = val.trim().toLowerCase(); break;
       case 'rel': {
         const r = /^\[\[([^\]|]+)(?:\|[^\]]*)?\]\]\s*=\s*([^/]*)\/\s*([+-]?\d+)/.exec(val);
         if (r) entry.tags.rel.push({ to: r[1].trim(), bond: r[2].trim(), n: Math.max(-2, Math.min(2, Number(r[3]))) });

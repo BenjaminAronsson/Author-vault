@@ -41,7 +41,7 @@ You get the world, the chapter id, the source chapter path, a **context pack** p
   - a `Relations` row for everyone they deal with
   - `Knowledge` items for what they learn
   - an `Inner life` paragraph
-  Characters who are only mentioned get what the text supports.
+  Characters who are only mentioned get what the text supports. Their timeline lines carry `"presence": "mentioned"` (or `"remembered"`) and no `at`, so the viewer doesn't place them in the scene.
 - **Goals, Fears, Dreams, Relations** are what bring a character to life:
   - Add rows when something new shows. Read the subtext, not just stated facts.
   - When a known goal changes, send the same Goal with the new Status (`achieved`, `abandoned` or `betrayed`). Rows are never deleted.

@@ -115,3 +115,28 @@ describe('the Norrgården genealogy example', async () => {
     expect(lint(m).issues).toEqual([]);
   });
 });
+
+describe('present vs. mentioned', () => {
+  it('parses the presence tag', () => {
+    const t = parseTimelineLine('- **B1-C02** · `pov:objective` · `presence:mentioned` · Anna speaks of him. ([[B1-C02]])');
+    expect(t.tags.presence).toBe('mentioned');
+  });
+  it('keeps mentioned people off stage and leaves their whereabouts alone', () => {
+    const files = {
+      'Stories/B1/Story.md': '---\ntype: story\norder: 1\n---\n# B1',
+      'Stories/B1/Chapters/B1-C01.md': '---\ntype: chapter\nwhen: B1/C01\ncharacters: ["[[Anna]]", "[[Olof]]"]\nplaces: ["[[Mill]]"]\n---\n# B1-C01 — One',
+      'Stories/B1/Chapters/B1-C02.md': '---\ntype: chapter\nwhen: B1/C02\ncharacters: ["[[Anna]]"]\nmentioned: ["[[Olof]]"]\nplaces: ["[[Inn]]"]\n---\n# B1-C02 — Two',
+      'Characters/Anna/Anna.md': '---\ntype: character\n---\n# Anna\n## Timeline\n',
+      'Characters/Olof/Olof.md': '---\ntype: character\n---\n# Olof\n## Timeline\n- **B1-C02** · `pov:objective` · `presence:mentioned` · `at:[[Inn]]` · Anna speaks of him. ([[B1-C02]])\n',
+      'Places/Mill.md': '---\ntype: location\n---\n# Mill', 'Places/Inn.md': '---\ntype: location\n---\n# Inn',
+    };
+    const m = parseWorld({ world: 'T', files: Object.entries(files).map(([path, text]) => ({ path, text })) });
+    const c = buildClock(m);
+    const seq = c.sequences.main;
+    const snaps = buildSnapshots(m, seq);
+    const last = snaps.at(-1);
+    expect(last.onStage).toEqual(['Characters/Anna/Anna']);
+    expect(last.mentioned).toEqual(['Characters/Olof/Olof']);
+    expect(last.presence['Characters/Olof/Olof'].place).toBe('Places/Mill');
+  });
+});

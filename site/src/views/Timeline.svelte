@@ -176,6 +176,7 @@
         <div class="small">
           {#if pc.pov}<span class="chip">POV</span> <EntityLink id={pc.pov} /> · {/if}
           {#each pc.characters as id, i (id)}{#if i}{', '}{/if}<EntityLink {id} />{/each}
+          {#if pc.mentioned?.length}<span class="mentioned" title="Talked about, not there"> · talked about: {#each pc.mentioned as id, i (id)}{#if i}{', '}{/if}<EntityLink {id} />{/each}</span>{/if}
           {#if pc.places.length} · @ {#each pc.places as id, i (id)}{#if i}{', '}{/if}<EntityLink {id} />{/each}{/if}
         </div>
       {/if}

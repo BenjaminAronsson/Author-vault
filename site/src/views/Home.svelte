@@ -9,6 +9,7 @@
 
   const recap = $derived(store.sequence.slice(Math.max(0, store.idx - 2), store.idx + 1).map((c) => store.model.chapters[c]));
   const onStage = $derived((store.snap?.onStage ?? []).filter((id) => store.visible(id)));
+  const mentioned = $derived((store.snap?.mentioned ?? []).filter((id) => store.visible(id)));
   const changes = $derived.by(() => {
     const out = [];
     for (let i = store.idx; i >= Math.max(0, store.idx - 2); i--) for (const r of store.snaps[i]?.relChanges ?? []) if (store.visible(r.from) && store.visible(r.to)) out.push({ ...r, at: store.sequence[i] });
@@ -73,6 +74,10 @@
           </div>
         </div>
       {:else}<p class="muted small">Nobody on stage.</p>{/each}
+      {#if mentioned.length}
+        <div class="label mt">{T.mentioned}</div>
+        <div class="small mentioned" title="Named or talked about in this step, but not there">{#each mentioned as id, i (id)}{#if i}{', '}{/if}<EntityLink {id} />{/each}</div>
+      {/if}
     </div>
     <div class="card">
       <div class="label">{T.relChanged}</div>

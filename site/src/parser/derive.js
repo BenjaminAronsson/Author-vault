@@ -61,7 +61,7 @@ function indexByStep(model, allowed) {
 
 /**
  * State after each step of a continuity's sequence.
- * snapshot = { step, onStage:[ids], presence:{id:{place,src}}, rel:{'a>b':{bond,n,src,since}}, status:{id}, goals:{id:{goal:status}}, introduced:Set }
+ * snapshot = { step, onStage:[ids] (on scene), mentioned:[ids] (only talked about), presence:{id:{place,src}}, rel:{'a>b':{bond,n,src,since}}, status:{id}, goals:{id:{goal:status}}, introduced:Set }
  */
 export function buildSnapshots(model, sequence, canonFilter = null) {
   const allowed = (c) => !canonFilter || canonFilter.has(c ?? 'book');
@@ -73,12 +73,13 @@ export function buildSnapshots(model, sequence, canonFilter = null) {
   sequence.forEach((cid, i) => {
     const ch = model.chapters[cid];
     const changed = [];
-    for (const id of [...ch.characters, ...ch.places, ...ch.events]) introduced.add(id);
+    for (const id of [...ch.characters, ...ch.places, ...ch.events, ...(ch.mentioned ?? []), ...(ch.mentionedPlaces ?? [])]) introduced.add(id);
     const taggedAt = new Set();
     for (const { entity, entry } of byStep[cid] ?? []) {
       introduced.add(entity);
       const t = entry.tags;
-      if (t.at) { presence[entity] = { place: t.at, src: 'tag' }; taggedAt.add(entity); }
+      const offstage = t.presence === 'mentioned' || t.presence === 'remembered';
+      if (t.at && !offstage) { presence[entity] = { place: t.at, src: 'tag' }; taggedAt.add(entity); }
       if (t.status) status[entity] = t.status;
       for (const g of t.goal) (goals[entity] ??= {})[g.goal] = g.status;
       for (const r of t.rel) {
@@ -97,7 +98,8 @@ export function buildSnapshots(model, sequence, canonFilter = null) {
     for (const e of changed) lastChange[`${e.from}>${e.to}`] = cid;
     snaps.push({
       step: cid, index: i,
-      onStage: [...new Set([...ch.characters, ...(byStep[cid] ?? []).filter((x) => model.entities[x.entity]?.type === 'character').map((x) => x.entity)])],
+      onStage: [...new Set([...ch.characters, ...(byStep[cid] ?? []).filter((x) => model.entities[x.entity]?.type === 'character' && !/^(mentioned|remembered)$/.test(x.entry.tags?.presence ?? '')).map((x) => x.entity)])],
+      mentioned: [...new Set([...(ch.mentioned ?? []), ...(byStep[cid] ?? []).filter((x) => model.entities[x.entity]?.type === 'character' && /^(mentioned|remembered)$/.test(x.entry.tags?.presence ?? '')).map((x) => x.entity)])].filter((x) => !ch.characters.includes(x)),
       presence: { ...presence }, rel: { ...rel }, status: { ...status },
       goals: Object.fromEntries(Object.entries(goals).map(([k, v]) => [k, { ...v }])),
       introduced: new Set(introduced), relChanges: changed,

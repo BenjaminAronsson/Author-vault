@@ -161,6 +161,7 @@ export function timelineLine(cid, t) {
   if (t.evidence) tags.push(`\`evidence:${t.evidence}\``);
   if (t.confidence) tags.push(`\`confidence:${t.confidence}\``);
   if (t.canon && t.canon !== 'book') tags.push(`\`canon:${t.canon}\``);
+  if (t.presence && t.presence !== 'present') tags.push(`\`presence:${String(t.presence).replace(/[`\s]/g, '')}\``);
   if (t.at) tags.push(`\`at:${link(t.at)}\``);
   for (const r of t.rel ?? []) tags.push(`\`rel:${link(r.to)}=${String(r.bond ?? 'tie').replace(/[/`]/g, ' ')}/${Math.max(-2, Math.min(2, Math.round(Number(r.n) || 0)))}\``);
   if (t.status) tags.push(`\`status:${t.status}\``);
@@ -223,10 +224,15 @@ export function applyPatch(world, patch, opts) {
       return false;
     });
     for (const n of [...(c.characters ?? [])]) ent(n, 'character');
-    for (const n of [...(c.places ?? [])]) ent(n, 'location');
+    for (const n of [...(c.mentioned ?? [])]) ent(n, 'character');
+    for (const n of [...(c.places ?? []), ...(c.mentioned_places ?? [])]) ent(n, 'location');
+    // on scene wins: a name listed both ways counts as present
+    const onScene = new Set((c.characters ?? []).map(canonName)), here = new Set((c.places ?? []).map(canonName));
+    const mentioned = (c.mentioned ?? []).filter((x) => !onScene.has(canonName(x))), mentionedPlaces = (c.mentioned_places ?? []).filter((x) => !here.has(canonName(x)));
     for (const n of [...(c.events ?? [])]) ent(n, 'event');
     const fm = ['---', 'type: chapter', 'world: "[[World]]"', `story: "[[Stories/${story}/Story|${story}]]"`, `when: ${cid.replace(/-(C\d+)$/, '/$1')}`,
       `pov: "${c.pov && (c.characters ?? []).some((x) => canonName(x) === canonName(c.pov)) ? link(c.pov) : String(c.pov ?? '').replace(/"/g, "'")}"`, `canon: ${canon}`, 'continuity: main', `characters: ${list(c.characters)}`, `places: ${list(c.places)}`,
+      ...(mentioned.length ? [`mentioned: ${list(mentioned)}`] : []), ...(mentionedPlaces.length ? [`mentioned_places: ${list(mentionedPlaces)}`] : []),
       `events: ${list(c.events)}`,
       // archive sources (genealogy): what kind of document, how much it weighs, where it is kept, its own date
       ...[['source_kind', c.source_kind], ['evidence', c.evidence], ['archive_ref', c.archive_ref], ['file', c.file], ['dated', c.dated]].filter(([, v]) => v).map(([k, v]) => `${k}: ${JSON.stringify(String(v))}`),
