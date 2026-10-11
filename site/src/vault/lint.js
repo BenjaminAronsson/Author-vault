@@ -22,6 +22,17 @@ export function lint(model, { touched = null } = {}) {
   const idx = Object.fromEntries(seq.map((c, i) => [c, i]));
   const intro = introductionIndex(model, seq);
 
+  // present or only talked about? Someone in a chapter's cast with no timeline line there, who isn't its POV,
+  // may only have been named. A hint, not an error: re-extracting the chapter sorts it out.
+  if (!model.genealogy) {
+    const lineAt = new Set(ents.flatMap((e) => e.timeline.filter((t) => t.step).map((t) => `${e.id}@${t.step}`)));
+    for (const ch of Object.values(model.chapters)) {
+      if (ch.timeStep || !ch.entity) continue;
+      const odd = ch.characters.filter((c) => c !== ch.pov && !lineAt.has(`${c}@${ch.id}`));
+      if (odd.length) add('maybe-mentioned', model.entities[ch.entity]?.path ?? ch.id, `${odd.length} in characters: with no timeline line here (${odd.map((c) => model.entities[c]?.title ?? c).slice(0, 5).join(', ')}${odd.length > 5 ? '…' : ''}): present, or only talked about? Move to mentioned: if not there`, true);
+    }
+  }
+
   for (const e of ents) {
     if (e.type !== 'character') continue;
     // timeline order

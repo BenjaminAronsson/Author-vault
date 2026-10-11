@@ -68,7 +68,8 @@
     writeHash(store, true);
     loadPending(model.world);
     loadEdits(model.world);
-    if (!localStorage.getItem('tour:done')) setTimeout(() => (store.tourOpen = true), 400);
+    // the tour is for arriving at a world, not for following a link to a page in it
+    if (!localStorage.getItem('tour:done') && !(h.world === model.world && (h.view || h.sel))) setTimeout(() => (store.tourOpen = true), 400);
   }
   function leave() { store.model = null; history.pushState(null, '', location.pathname); }
 
@@ -211,7 +212,7 @@
     {/if}
     {#if localNote}<div class="banner note">{localNote}</div>{/if}
     {#if pendingHere.length || editsHere.length}
-      <div class="banner pend">{[pendingHere.length && T.pendingImages(pendingHere.length), editsHere.length && `${editsHere.length} map change${editsHere.length === 1 ? '' : 's'} not saved to the vault`].filter(Boolean).join(' · ')}
+      <div class="banner pend">{[pendingHere.length && T.pendingImages(pendingHere.length), editsHere.length && `${editsHere.length} change${editsHere.length === 1 ? '' : 's'} (map pins, photo tags) not saved to the vault`].filter(Boolean).join(' · ')}
         <button class="btn primary" onclick={save}>{T.saveToVault}</button>
         {#if editsHere.length}<button class="btn" onclick={() => copy(editsYaml()).then(() => (saveMsg = 'Copied as YAML.'))}>Copy as YAML</button>{/if}
         {#if saveMsg}<pre class="small">{saveMsg}</pre>{/if}</div>

@@ -7,7 +7,45 @@
 // Children hang from their parents' couple on one bus (drop → bar → stubs), each couple's children under it,
 // and every block is as wide as what hangs from it, so lines don't cross.
 
-export const STYLES = { tree: 'Tree', descendants: 'Descendants', ancestors: 'Ancestors' };
+export const STYLES = { tree: 'Tree', descendants: 'Descendants', ancestors: 'Ancestors', fan: 'Fan' };
+
+/**
+ * Fan chart: the person in the centre, each generation of ancestors a ring, each ancestor a slice of it
+ * (the father's side on the left, the mother's on the right). Slot n of generation g has the parents 2n, 2n+1.
+ * → { size, cx, cy, cells: [{ id, gen, slot, path, tx, ty, rot, r0, r1 }], R }
+ */
+export function fanChart(tree, idx, focus, { ring = 78, centre = 64, spread = 240 } = {}) {
+  const gen = tree.gen;
+  const parents = (id) => [...(idx.parents.get(id) ?? [])].filter((p) => gen[p] === gen[id] - 1).sort((a, b) => (tree.order?.[a] ?? 0) - (tree.order?.[b] ?? 0));
+  const deg = Math.PI / 180, a0 = -90 - spread / 2; // degrees, 0 = right, -90 = up
+  const cells = [];
+  let deepest = 0;
+  const walk = (id, g, slot) => {
+    const ps = parents(id).slice(0, 2);
+    ps.forEach((p, i) => {
+      const s = slot * 2 + i, n = 2 ** (g + 1);
+      const t0 = a0 + (spread * s) / n, t1 = a0 + (spread * (s + 1)) / n;
+      const r0 = centre + g * ring, r1 = r0 + ring - 4;
+      const pt = (r, t) => [r * Math.cos(t * deg), r * Math.sin(t * deg)];
+      const [x0, y0] = pt(r0, t0), [x1, y1] = pt(r1, t0), [x2, y2] = pt(r1, t1), [x3, y3] = pt(r0, t1);
+      const big = t1 - t0 > 180 ? 1 : 0;
+      const tm = (t0 + t1) / 2, rm = (r0 + r1) / 2;
+      const [tx, ty] = pt(rm, tm);
+      // text along the radius in outer (narrow) rings, across it in the inner ones; never upside down
+      const radial = (t1 - t0) * deg * rm < 120;
+      let rot = radial ? tm : tm + 90;
+      if (rot > 90 && rot < 270) rot -= 180; else if (rot < -90) rot += 180;
+      cells.push({ id: p, gen: g + 1, slot: s, r0, r1, tx, ty, rot, radial, path: `M${x0},${y0} L${x1},${y1} A${r1},${r1} 0 ${big} 1 ${x2},${y2} L${x3},${y3} A${r0},${r0} 0 ${big} 0 ${x0},${y0} Z` });
+      deepest = Math.max(deepest, g + 1);
+      walk(p, g + 1, s);
+    });
+  };
+  walk(focus, 0, 0);
+  const R = centre + deepest * ring + 8;
+  const top = R, bottom = Math.max(centre + 8, R * Math.max(0, Math.cos((180 - spread / 2) * deg) * -1));
+  const pad = 16;
+  return { cells, R, width: 2 * R + 2 * pad, height: top + bottom + 2 * pad, cx: R + pad, cy: top + pad, centre };
+}
 
 /**
  * @param tree   familyTree() output (needs .gen)

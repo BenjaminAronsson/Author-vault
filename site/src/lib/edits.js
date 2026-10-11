@@ -12,7 +12,17 @@ function applyToModel({ id, key, value }) {
   if (!e) return;
   if (key === 'map') e.map = value ? { x: value.x, y: value.y } : null;
   if (key === 'map_image') { e.mapSketch = value === 'sketch'; if (value == null) e.mapImage = null; }
+  if (key === 'depicts' || key === 'regions') retag(e, key, value);
   e.fm = { ...e.fm, [key]: value ?? undefined };
+}
+// photo tags: keep the Media note's people and everyone's photo lists in step with the edit
+const idOf = (ref) => store.model.nameIndex[String(ref ?? '').replace(/^\[\[|\]\]$/g, '').split('|')[0].trim().toLowerCase()] ?? null;
+function retag(e, key, value) {
+  if (key === 'regions') { e.regions = (value ?? []).map((r) => ({ ...r, who: idOf(r.who) })).filter((r) => r.who); return; }
+  const before = new Set(e.depicts ?? []);
+  e.depicts = (value ?? []).map(idOf).filter(Boolean);
+  for (const id of before) if (!e.depicts.includes(id)) { const t = store.model.entities[id]; if (t?.media) t.media = t.media.filter((m) => m !== e.id); }
+  for (const id of e.depicts) { const t = store.model.entities[id]; if (t && !(t.media ?? []).includes(e.id)) t.media = [...(t.media ?? []), e.id]; }
 }
 function persist() { try { localStorage.setItem(KEY(store.model.world), JSON.stringify(store.pendingEdits)); } catch {} }
 

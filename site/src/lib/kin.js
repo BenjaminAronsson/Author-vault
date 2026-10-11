@@ -24,9 +24,11 @@ const get = (idx, k, id) => [...(idx[k].get(id) ?? [])];
 /**
  * Generations around a person: rows from the oldest ancestors (negative) to the youngest descendants.
  * → { rows: [{ gen, ids }], edges: [{ from: parent, to: child }], spouses: [[a, b]], siblings, gen: {id: gen}, order: {id: birth rank}, spousesOf }
- * `keep(id)` filters people out (e.g. not yet born at the bookmark, or living and hidden).
+ * `keep(id)` filters people out (e.g. not yet born at the bookmark, or living and hidden). `stop`: a Set of people
+ * whose further ancestors/descendants are folded away.
  */
-export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => true, siblings = false } = {}) {
+export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => true, siblings = false, stop = null } = {}) {
+  const open = (id) => !stop?.has(id); // collapsed branches: placed, but not followed further
   const sort = byBirth(model);
   const placed = new Map(); // id → gen
   const rows = new Map();
@@ -41,14 +43,15 @@ export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => t
   let layer = [focus];
   for (let g = -1; g >= -up; g--) {
     const next = [];
-    for (const id of layer) for (const p of get(idx, 'parents', id).sort(sort)) if (put(p, g)) next.push(p);
+    for (const id of layer) if (open(id)) for (const p of get(idx, 'parents', id).sort(sort)) if (put(p, g)) next.push(p);
     layer = next;
   }
   // descendants of the focus and their spouses
   layer = rows.get(0) ?? [];
   for (let g = 1; g <= down; g++) {
     const next = [];
-    for (const id of layer) for (const c of get(idx, 'children', id).sort(sort)) if (put(c, g)) next.push(c);
+    // folding someone folds their couple: the children aren't reached through the spouse either
+    for (const id of layer) if (open(id) && open(partnerOf.get(id))) for (const c of get(idx, 'children', id).sort(sort)) if (put(c, g)) next.push(c);
     for (const c of [...next]) for (const s of spousesOf(c)) if (put(s, g, c)) next.push(s);
     layer = next;
   }

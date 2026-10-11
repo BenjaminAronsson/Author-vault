@@ -98,8 +98,8 @@
     {#if nowQuote}<p class="quote">“{nowQuote.text}” <span class="small muted">— {nowQuote.mood.toLowerCase()}, {nowQuote.source}</span></p>{/if}
   </section>
 
-  {#if e.media?.length || e.gallery?.length}
-    <section class="card"><h2>Photos</h2><Gallery {id} /></section>
+  {#if e.media?.length || e.gallery?.length || store.source?.dir}
+    <section class="card"><h2>Photos</h2><Gallery {id} add /></section>
   {/if}
 
   {#if gen || e.kin}

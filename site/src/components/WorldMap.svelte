@@ -6,7 +6,7 @@
   import { uploadImage } from '../lib/images.js';
   import { editField } from '../lib/edits.js';
   import Avatar from './Avatar.svelte';
-  import { registerZoom } from '../lib/zoomKeys.js';
+  import PanZoom from './PanZoom.svelte';
   import EntityLink from './EntityLink.svelte';
 
   let { places } = $props();
@@ -32,39 +32,9 @@
   const url = $derived((store.version, frame?.mapImage ? store.pending.find((p) => p.path === frame.mapImage)?.url ?? store.model.imageUrls?.[frame.mapImage] : null));
   const sketch = $derived(!url);
 
-  // ---- zoom & pan -----------------------------------------------------------------------------------
-  let k = $state(1), tx = $state(0), ty = $state(0);
-  let vp = $state(null);
+  // ---- zoom & pan: PanZoom (pins keep their size: they scale by 1/k) ----------------------------------
+  let k = $state(1);
   let aspect = $state(1.6);
-  $effect(() => { fid; k = 1; tx = 0; ty = 0; });
-  function zoomAt(f, cx, cy) {
-    const nk = Math.min(8, Math.max(1, k * f));
-    tx = cx - (cx - tx) * (nk / k); ty = cy - (cy - ty) * (nk / k); k = nk;
-    if (k === 1) { tx = 0; ty = 0; }
-  }
-  // same feel as PanZoom: mouse wheel / pinch zoom around the pointer, trackpad scroll pans when zoomed,
-  // and at the limits the page scrolls on
-  function wheel(ev) {
-    const unit = ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? vp.clientHeight : 1;
-    const dx = ev.deltaX * unit, dy = ev.deltaY * unit;
-    const r = vp.getBoundingClientRect();
-    const mouseWheel = ev.deltaMode !== 0 || (ev.deltaX === 0 && Math.abs(ev.deltaY) >= 40 && Number.isInteger(ev.deltaY));
-    if (ev.ctrlKey || mouseWheel) {
-      const nk = Math.min(8, Math.max(1, k * Math.exp(-dy * (ev.ctrlKey ? 0.01 : 0.0018))));
-      if (nk === k) { if (ev.ctrlKey) ev.preventDefault(); return; }
-      ev.preventDefault();
-      zoomAt(nk / k, ev.clientX - r.left, ev.clientY - r.top);
-      return;
-    }
-    if (k === 1) return;
-    ev.preventDefault();
-    tx = Math.min(0, Math.max(r.width - r.width * k, tx - dx));
-    ty = Math.min(0, Math.max(r.height - r.height * k, ty - dy));
-  }
-  // non-passive, so the wheel can stop the page from scrolling while it zooms (Svelte's onwheel is passive)
-  $effect(() => { if (!vp) return; vp.addEventListener('wheel', wheel, { passive: false }); return () => vp.removeEventListener('wheel', wheel); });
-  $effect(() => { if (vp) return registerZoom({ el: vp, zoom: (f) => zoomBtn(f), reset: () => { k = 1; tx = 0; ty = 0; } }); });
-  const zoomBtn = (f) => { const r = vp.getBoundingClientRect(); zoomAt(f, r.width / 2, r.height / 2); };
 
   // ---- arranging ------------------------------------------------------------------------------------
   let arranging = $state(false);
@@ -73,7 +43,6 @@
   let note = $state('');
   let stage = $state(null);
   const frac = (ev) => { const r = stage.getBoundingClientRect(); return { x: Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height)) }; };
-  let pan = null;
   function down(ev) {
     if (ev.button !== 0) return;
     const pin = ev.target.closest?.('[data-pin]');
@@ -83,9 +52,6 @@
       window.addEventListener('pointermove', move); window.addEventListener('pointerup', up, { once: true });
       return;
     }
-    if (ev.target.closest?.('button, a, select')) return;
-    pan = { x: ev.clientX - tx, y: ev.clientY - ty };
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up, { once: true });
   }
   function trayDown(ev, id) {
     ev.preventDefault();
@@ -97,11 +63,10 @@
       const r = stage.getBoundingClientRect();
       const inside = ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
       drag = { ...drag, ...(inside ? frac(ev) : { x: null, y: null }), ghost: { cx: ev.clientX, cy: ev.clientY } };
-    } else if (pan && k > 1) { tx = ev.clientX - pan.x; ty = ev.clientY - pan.y; }
+    }
   }
   async function up() {
     window.removeEventListener('pointermove', move);
-    pan = null;
     const d = drag; drag = null;
     if (!d || d.x == null) return;
     const e = store.model.entities[d.id];
@@ -209,11 +174,6 @@
   </nav>
   <label class="small">Follow <select value={follow} onchange={(ev) => store.setFollow(ev.currentTarget.value)}><option value="">nobody</option>{#each chars as c (c.id)}<option value={c.id}>{c.title}</option>{/each}</select></label>
   <span class="grow"></span>
-  <div class="zoom" role="group" aria-label="Zoom">
-    <button class="btn" onclick={() => zoomBtn(1.4)} aria-label="Zoom in">+</button>
-    <button class="btn" onclick={() => zoomBtn(1 / 1.4)} aria-label="Zoom out">−</button>
-    <button class="btn" onclick={() => { k = 1; tx = 0; ty = 0; }} aria-label="Fit">⤢</button>
-  </div>
   <button class="btn" class:on={arranging} aria-pressed={arranging} onclick={() => (arranging = !arranging)}>✎ {arranging ? 'Done arranging' : 'Arrange'}</button>
 </div>
 
@@ -236,8 +196,10 @@
 {/if}
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="vp" bind:this={vp} onpointerdown={down} class:arranging class:zoomed={k > 1}>
-  <div class="stage" bind:this={stage} class:sketch style:aspect-ratio={aspect} style:transform={`translate(${tx}px, ${ty}px) scale(${k})`}>
+<div class="vp" onpointerdown={down} class:arranging>
+  {#key fid}
+  <PanZoom min={1} max={8} bind:scale={k} ignore={arranging ? '[data-pin]' : null}>
+  <div class="stage" bind:this={stage} class:sketch style:aspect-ratio={aspect}>
     {#if url}
       <img src={url} alt="Map of {frame.title}" draggable="false" onload={(ev) => (aspect = ev.currentTarget.naturalWidth / ev.currentTarget.naturalHeight)} />
     {:else}
@@ -273,6 +235,8 @@
       </button>
     {/each}
   </div>
+  </PanZoom>
+  {/key}
 </div>
 {#if drag?.fromTray && drag.x == null && drag.ghost}
   <div class="floating chip" style:left={`${drag.ghost.cx}px`} style:top={`${drag.ghost.cy}px`}>⠿ {store.name(drag.id)}</div>
@@ -285,18 +249,14 @@
   .toolbar { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-bottom: .5rem; }
   .crumbs { display: flex; gap: .35rem; align-items: center; }
   .grow { flex: 1; }
-  .zoom { display: inline-flex; gap: .2rem; }
-  .zoom .btn { padding: .15rem .55rem; }
   .btn.on { background: var(--accent); color: var(--paper); border-color: var(--accent); }
   select { font: inherit; background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; margin-left: .3rem; }
   .arrange { display: grid; gap: .5rem; margin-bottom: .6rem; padding: .7rem .9rem; }
   .tray { display: flex; gap: .3rem; flex-wrap: wrap; }
   .tchip { border: 1px dashed var(--ink-3); background: var(--paper); border-radius: 999px; padding: .15rem .6rem; font-size: .8rem; cursor: grab; touch-action: none; }
   .row { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
-  .vp { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid var(--rule); max-height: 72vh; max-height: 72dvh; touch-action: none; }
-  /* touch: one finger up/down scrolls the page unless arranging pins */
-  @media (pointer: coarse) { .vp:not(.arranging) { touch-action: pan-y; } }
-  .vp.zoomed { cursor: grab; }
+  .vp { position: relative; overflow: hidden; border-radius: 8px; border: 1px solid var(--rule); max-height: 72vh; max-height: 72dvh; }
+  .vp.arranging :global(.pz) { touch-action: none; }
   .stage { position: relative; width: 100%; max-height: 72vh; transform-origin: 0 0; user-select: none; }
   .stage img { display: block; width: 100%; height: 100%; object-fit: contain; }
   .parchment { position: absolute; inset: 0; background:

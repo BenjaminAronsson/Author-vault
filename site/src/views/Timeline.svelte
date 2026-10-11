@@ -6,7 +6,8 @@
   import Markdown from '../components/Markdown.svelte';
   import Storylines from '../components/Storylines.svelte';
 
-  let mode = $state('chapters');
+  // phones start on the list: the chart needs width the screen doesn't have
+  let mode = $state(typeof matchMedia !== 'undefined' && matchMedia('(max-width: 760px)').matches ? 'list' : 'chapters');
   let level = $state(store.books.length > 1 ? 'saga' : 'book');
   let zoomIdx = $state(null); // index into store.books; null = follow the bookmark
   let threadFilter = $state('open');
@@ -63,6 +64,7 @@
   <div class="bar">
     <div class="modes" role="tablist">
       <button role="tab" class="btn" class:on={mode === 'chapters'} aria-selected={mode === 'chapters'} onclick={() => (mode = 'chapters')}>Books & chapters</button>
+      <button role="tab" class="btn" class:on={mode === 'list'} aria-selected={mode === 'list'} onclick={() => (mode = 'list')}>List</button>
       <button role="tab" class="btn" class:on={mode === 'lines'} aria-selected={mode === 'lines'} onclick={() => (mode = 'lines')}>Storylines</button>
     </div>
     {#if mode === 'chapters'}
@@ -86,6 +88,34 @@
 
   {#if mode === 'lines'}
     <div class="card"><Storylines /></div>
+  {:else if mode === 'list'}
+    <ol class="tlist">
+      {#each seq as cid, i (cid)}
+        {@const c = store.model.chapters[cid]}
+        {@const first = i === 0 || store.model.chapters[seq[i - 1]].story !== c.story}
+        {#if first}<li class="bhead">{store.model.stories[c.story]?.title ?? c.story}</li>{/if}
+        <li class="card trow" class:cur={i === store.idx} class:later={hidden(i)} class:exp={c.canon === 'expansion'}>
+          {#if hidden(i)}
+            <span class="small muted">{c.timeStep ? c.title : `Chapter ${c.num}`} · after your bookmark</span>
+            <button class="btn ghost small" onclick={() => store.setAt(cid)}>I've read up to here</button>
+          {:else}
+            <div class="row">
+              <strong>{c.timeStep ? c.title : `${c.num}. ${c.title}`}</strong>
+              {#if c.canon === 'expansion'}<span class="exp-mark">EXP</span>{/if}
+              <span class="sp"></span>
+              {#if i === store.idx}<span class="chip">you are here</span>{:else}<button class="btn ghost small" onclick={() => store.setAt(cid)}>Go here</button>{/if}
+            </div>
+            {#if c.summary}<div class="sum small"><Markdown text={c.summary.split('\n').slice(0, 3).join('\n')} /></div>{/if}
+            <div class="small">
+              {#if c.pov}<span class="chip">POV</span> <EntityLink id={c.pov} />{#if c.characters.length} · {/if}{/if}
+              {#each c.characters.filter((x) => x !== c.pov) as id, k (id)}{#if k}{', '}{/if}<EntityLink {id} />{/each}
+              {#if c.mentioned?.length}<span class="mentioned"> · talked about: {#each c.mentioned as id, k (id)}{#if k}{', '}{/if}<EntityLink {id} />{/each}</span>{/if}
+              {#if c.places.length} · @ {#each c.places as id, k (id)}{#if k}{', '}{/if}<EntityLink {id} />{/each}{/if}
+            </div>
+          {/if}
+        </li>
+      {/each}
+    </ol>
   {:else}
   <div class="scroll card" bind:clientWidth={cw}>
     <PanZoom>
@@ -186,7 +216,7 @@
 </div>
 
 <style>
-  .tl { padding: 1rem; display: grid; gap: .8rem; max-width: 1500px; margin: 0 auto; }
+  .tl { padding: 1rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: .8rem; max-width: 1500px; margin: 0 auto; }
   .banner { background: var(--exp-tint); border: 1px solid var(--exp); border-left-width: 4px; border-radius: var(--radius); padding: .5rem .8rem; display: flex; gap: .6rem; align-items: center; }
   .bar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
   .modes { display: flex; gap: .3rem; }
@@ -196,6 +226,16 @@
   .grow { flex: 1; }
   select { font: inherit; background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; margin-left: .3rem; }
   .scroll { overflow-x: auto; padding: .5rem; }
+  .tlist { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+  .bhead { font: 600 .7rem var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-top: .6rem; }
+  .trow { padding: .55rem .7rem; display: grid; gap: .25rem; }
+  .trow.cur { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .trow.later { opacity: .6; display: flex; align-items: center; justify-content: space-between; }
+  .trow.exp { border-left: 3px solid var(--exp); }
+  .trow .row { display: flex; gap: .4rem; align-items: center; }
+  .trow .sp { flex: 1; }
+  .sum :global(p), .sum :global(ul) { margin: 0; }
+  @media (max-width: 760px) { .tl { padding: .5rem; } .bar { gap: .5rem; } }
   svg { display: block; }
   .lane { font: 600 12px var(--sans); fill: var(--ink-2); }
   .lane.exp { fill: var(--exp); }

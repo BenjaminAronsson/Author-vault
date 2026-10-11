@@ -5,12 +5,12 @@ import { setField, addListItem } from './frontmatter.js';
 const TYPE_FOLDER = { character: 'characters', location: 'places', faction: 'factions', item: 'items', creature: 'creatures', religion: 'religions', culture: 'cultures', world: 'world', magic: 'magic', technology: 'technology', concept: 'concepts', language: 'languages', event: 'events', era: 'history' };
 const slug = (s) => s.normalize('NFKD').replace(/[^\w-]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
 
-export async function resizeToWebp(file, max = 1024) {
+export async function resizeToWebp(file, max = 1024, quality = 0.85) {
   const bmp = await createImageBitmap(file);
   const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const c = new OffscreenCanvas(Math.round(bmp.width * k), Math.round(bmp.height * k));
   c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-  return c.convertToBlob({ type: 'image/webp', quality: 0.85 });
+  return c.convertToBlob({ type: 'image/webp', quality });
 }
 
 function plan(entity, mode) {

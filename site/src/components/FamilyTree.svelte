@@ -3,8 +3,8 @@
   // descendants only: lib/familyLayout.js). People appear when they are born at the bookmark and turn grey when
   // they have died; living people stay hidden unless shown.
   import { store } from '../lib/store.svelte.js';
-  import { kinIndex, familyTree, lifeLine, kinDetail } from '../lib/kin.js';
-  import { layoutFamily } from '../lib/familyLayout.js';
+  import { kinIndex, familyTree, lifeLine, lifespan, kinDetail } from '../lib/kin.js';
+  import { layoutFamily, fanChart } from '../lib/familyLayout.js';
   import { parseDate } from '../lib/dates.js';
   import Avatar from './Avatar.svelte';
   import PanZoom from './PanZoom.svelte';
@@ -12,15 +12,27 @@
   // viewHeight: the full Family view gives the tree the screen; compact (person pages) keeps a fixed size
   let { focus, up = 2, down = 2, style = 'tree', onpick = (id) => store.open(id), compact = false, viewHeight = null } = $props();
   const idx = $derived((store.version, kinIndex(store.model)));
+  // folded branches: someone's further ancestors (above them) or descendants (below) are tucked away
+  let fold = $state(new Set());
+  $effect(() => { focus; style; fold = new Set(); });
+  const toggle = (id) => { const f = new Set(fold); f.has(id) ? f.delete(id) : f.add(id); fold = f; };
+  const fan = $derived(style === 'fan');
   const tree = $derived(familyTree(store.model, idx, focus, {
-    up: style === 'descendants' ? 0 : up, down: style === 'ancestors' ? 0 : down, siblings: style === 'tree' && !compact,
-    keep: (id) => id === focus || store.visible(id),
+    up: style === 'descendants' ? 0 : up, down: style === 'ancestors' || fan ? 0 : down, siblings: style === 'tree' && !compact,
+    keep: (id) => id === focus || store.visible(id), stop: fold,
   }));
+  const fanLay = $derived(fan ? fanChart(tree, idx, focus) : null);
+  // can this person's branch be folded (or is it folded)? only away from the focus, and only if there is more
+  const further = (id) => {
+    const g = tree.gen[id];
+    if (!g || compact) return 0;
+    return [...(idx[g < 0 ? 'parents' : 'children'].get(id) ?? [])].filter((x) => x === focus || store.visible(x)).length;
+  };
 
   const W = $derived(compact ? 132 : 156), H = $derived(compact ? 64 : 76), GX = 30, GY = $derived(compact ? 44 : 56);
-  const lay = $derived(layoutFamily(tree, idx, focus, { style, W, H, GX, GY, spousesOf: tree.spousesOf }));
+  const lay = $derived(layoutFamily(tree, idx, focus, { style: fan ? 'ancestors' : style, W, H, GX, GY, spousesOf: tree.spousesOf }));
   const pos = $derived(lay.nodes);
-  const width = $derived(lay.width), height = $derived(lay.height);
+  const width = $derived(fan ? fanLay.width : lay.width), height = $derived(fan ? fanLay.height : lay.height);
   const ids = $derived(Object.keys(pos));
   const now = $derived(store.chapter?.date ?? null);
   const dead = (id) => {
@@ -37,6 +49,30 @@
 <div class="ft" class:compact>
   {#key focus + up + down + style}
   <PanZoom height={viewHeight ?? Math.min(height + 8, 360)} fit={!!viewHeight} fitMax={1.4}>
+  {#if fan}
+  <div class="canvas" style:width={`${width}px`} style:height={`${height}px`}>
+    <svg class="fan" width={width} height={height} role="img" aria-label={`Ancestors of ${store.name(focus)}`}>
+      <g transform={`translate(${fanLay.cx},${fanLay.cy})`}>
+        {#each fanLay.cells as c (c.id + c.slot)}
+          {@const e = store.model.entities[c.id]}
+          <g class="cell" class:dead={dead(c.id)} class:living={e.living} data-entity={c.id} role="button" tabindex="0"
+            onclick={() => onpick(c.id)} onkeydown={(ev) => ev.key === 'Enter' && onpick(c.id)}>
+            <path d={c.path} style:--g={c.gen}><title>{e.title} {lifeLine(e)}</title></path>
+            <text transform={`translate(${c.tx},${c.ty}) rotate(${c.rot})`} text-anchor="middle">
+              <tspan x="0" dy="-.2em" class="fn">{e.title.replace(/\s*\([^)]*\)\s*$/, '').split(' ')[0]}</tspan>
+              <tspan x="0" dy="1.15em" class="fy">{lifespan(e)}</tspan>
+            </text>
+          </g>
+        {/each}
+        <g class="cell me" data-entity={focus}>
+          <circle r={fanLay.centre - 4} />
+          <text text-anchor="middle" dy="-.1em" class="fn">{store.name(focus).replace(/\s*\([^)]*\)\s*$/, '')}</text>
+          <text text-anchor="middle" dy="1.2em" class="fy">{lifespan(store.model.entities[focus])}</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+  {:else}
   <div class="canvas" style:width={`${width}px`} style:height={`${height}px`}>
     <svg width={width} height={height} aria-hidden="true">
       {#each lay.buses as bus (bus.parents.join() + bus.children.join())}
@@ -72,8 +108,17 @@
           <Avatar {id} size={compact ? 30 : 38} />
           <span class="txt"><span class="n">{e.title.replace(/\s*\([^)]*\)\s*$/, '')}</span><span class="y">{lifeLine(e)}{dead(id) ? ' †' : ''}</span></span>
         </button>
+        {#if id !== focus && further(id)}
+          {@const g = tree.gen[id]}
+          <button class="fold" class:up={g < 0} aria-expanded={!fold.has(id)}
+            style:left={`${pos[id].x + W / 2 - 11}px`} style:top={`${g < 0 ? pos[id].y - 11 : pos[id].y + H - 11}px`}
+            onclick={(ev) => { ev.stopPropagation(); toggle(id); }}
+            title={fold.has(id) ? `Show ${g < 0 ? 'their parents' : 'their children'} (${further(id)})` : `Fold away ${g < 0 ? 'their ancestors' : 'their descendants'}`}>
+            {fold.has(id) ? `+${further(id)}` : g < 0 ? '▴' : '▾'}</button>
+        {/if}
       {/each}
   </div>
+  {/if}
   </PanZoom>
   {/key}
   {#if !compact}
@@ -88,7 +133,8 @@
 <style>
   .ft { position: relative; }
   .canvas { position: relative; margin: 0 auto; }
-  .canvas > svg { position: absolute; inset: 0; pointer-events: none; }
+  .canvas > svg { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+  .canvas > svg.fan { pointer-events: auto; }
   .ring, .badge { pointer-events: all; cursor: help; }
   path { fill: none; stroke: var(--ink-3); stroke-width: 1.5; opacity: .75; stroke-linejoin: round; }
   .sp { stroke: var(--accent); stroke-width: 2; }
@@ -118,4 +164,15 @@
   .y { font-size: .72rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
   .compact .n { font-size: .76rem; }
   .empty { text-align: center; }
+  .fold { position: absolute; min-width: 22px; height: 22px; padding: 0 .3rem; border-radius: 11px; border: 1px solid var(--rule); background: var(--card); color: var(--ink-2); font: 600 .7rem var(--sans); line-height: 1; z-index: 2; }
+  .fold:hover, .fold[aria-expanded='false'] { border-color: var(--accent); color: var(--accent); }
+  @media (pointer: coarse) { .fold { min-width: 30px; height: 30px; border-radius: 15px; } }
+  .fan .cell { cursor: pointer; }
+  .fan .cell path { fill: color-mix(in srgb, var(--accent) calc(30% - var(--g) * 4%), var(--card)); stroke: var(--paper); stroke-width: 2; }
+  .fan .cell:hover path, .fan .cell:focus-visible path { fill: color-mix(in srgb, var(--accent) 40%, var(--card)); outline: none; }
+  .fan .cell.dead { opacity: .65; }
+  .fan .cell.living path { stroke-dasharray: 4 3; stroke: var(--ink-3); }
+  .fan .me circle { fill: var(--card); stroke: var(--accent); stroke-width: 2; }
+  .fan .fn { font: 600 11px var(--sans); fill: var(--ink); }
+  .fan .fy { font: 10px var(--sans); fill: var(--ink-3); }
 </style>

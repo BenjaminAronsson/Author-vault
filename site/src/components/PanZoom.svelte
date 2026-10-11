@@ -5,12 +5,15 @@
   // overflowing) the wheel scrolls the page as usual. A drag never counts as a click on what's underneath.
   import { registerZoom } from '../lib/zoomKeys.js';
   // fit: start (and reset) scaled to fit the content, centred — up to fitMax — and refit on resize until the user zooms/drags
-  let { children, min = 0.3, max = 6, height = null, fill = false, fit = false, fitMax = 1.6 } = $props();
+  // ignore: a selector whose pointer-downs belong to the content (e.g. pins being dragged); scale: the zoom, for content
+  // that keeps labels a constant size
+  let { children, min = 0.3, max = 6, height = null, fill = false, fit = false, fitMax = 1.6, ignore = null, scale = $bindable(1) } = $props();
   let touched = false;
   let x = $state(0), y = $state(0), k = $state(1); // what is drawn
   let tx = 0, ty = 0, tk = 1; // where it is heading
   let vp = $state(null), inner = $state(null);
   let panning = $state(false);
+  $effect(() => { scale = k; });
   let full = $state(false); // full screen: the view takes the whole window (and every touch), Esc or ⤡ leaves
   let moved = false, start = null, raf = 0;
   const pointers = new Map();
@@ -72,6 +75,7 @@
   function down(ev) {
     if (ev.button !== 0 && ev.pointerType === 'mouse') return;
     if (ev.target.closest?.('select, input, textarea, .pz-ctrl')) return;
+    if (ignore && ev.target.closest?.(ignore)) return;
     pointers.set(ev.pointerId, rel(ev));
     if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; }
     start = { px: ev.clientX, py: ev.clientY, x: tx, y: ty, id: ev.pointerId };

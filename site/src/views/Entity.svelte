@@ -68,7 +68,7 @@
       <div class="card small">Opened {e.openedAt ?? '—'} · {e.closedAt && store.stepVisible(e.closedAt) ? `closed ${e.closedAt}` : 'still open'}
         {#if e.cast?.length} · {#each e.cast as c, i (c)}{#if i}{', '}{/if}<EntityLink id={c} />{/each}{/if}</div>
     {/if}
-    {#if e.type === 'media' || e.media?.length || e.gallery?.length}<section class="card"><h2>{e.type === 'media' ? 'Photo' : 'Photos'}</h2><Gallery id={e.id} /></section>{/if}
+    {#if e.type === 'media' || e.media?.length || e.gallery?.length || (store.source?.dir && ['location', 'event'].includes(e.type))}<section class="card"><h2>{e.type === 'media' ? 'Photo' : 'Photos'}</h2><Gallery id={e.id} add={['location', 'event'].includes(e.type)} /></section>{/if}
     {#if e.preamble}<div class="card"><Markdown text={e.preamble} /></div>{/if}
     {#each e.sectionOrder as h (h)}
       {#if h === 'Timeline'}

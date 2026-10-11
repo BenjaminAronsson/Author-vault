@@ -14,6 +14,7 @@ You get the **judgment list** from `node tools/vault.mjs lint "<World>" --json`,
 ## For each item
 - **duplicate-name:** (book worlds) if two notes are the same entity, merge them into the canonical note, put the other name in `aliases`, and replace links to the old note.
 - **after-death / before-first-seen / chronology:** decide whether it's a flashback, a memory, a ghost or portrait, an extraction error, or a real contradiction in the book. Fix errors. For real contradictions, add `> [!warning] Contradiction` with both citations.
+- **maybe-mentioned:** open the chapter source and check whether each listed person is physically in a scene. If they are only named, talked about, remembered or written to, move them from `characters:` to `mentioned:` in the chapter note (the one edit to a chapter note allowed here, since it corrects a classification, not the text). Leave the people who are there.
 - **missing-essential:** add Goals, Fears, Dreams or Relations only if the cited text supports them. Otherwise leave it and say so.
 - **Genealogy worlds** (`World.md` has `kind: genealogy`):
   - **possible-duplicate:** compare birth dates, parents, spouses and farms in both notes and their sources. **Never merge.** Write a recommendation to the author: same person (and why), different people, or undecided (which record would settle it). Record undecided cases as an open question in `Threads/` (`kind: forskningsfråga`).
