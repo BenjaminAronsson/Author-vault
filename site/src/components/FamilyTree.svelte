@@ -57,7 +57,7 @@
           {@const x1 = Math.min(a.x, b.x) + W}{@const x2 = Math.max(a.x, b.x)}{@const y = a.y + H / 2}
           <line class="sp conf-{d.confidence ?? 'none'}" x1={x1} y1={y} x2={x2} y2={y} />
           <g class="ring" transform={`translate(${(x1 + x2) / 2},${y})`}><title>Gifta{d.from ? ` ${d.from}` : ''}{d.confidence ? ` · ${d.confidence}` : ''}</title><circle r="10" /><circle class="rg" cx="-2.6" r="4" /><circle class="rg" cx="2.6" r="4" /></g>
-          {#if d.from}<text class="yr" x={(x1 + x2) / 2} y={y - 13} text-anchor="middle">{d.from}</text>{/if}
+          {#if d.from}<text class="yr" x={(x1 + x2) / 2} y={y - 13} text-anchor="middle">{parseDate(d.from)?.year ?? d.from}</text>{/if}
         {/if}
       {/each}
     </svg>

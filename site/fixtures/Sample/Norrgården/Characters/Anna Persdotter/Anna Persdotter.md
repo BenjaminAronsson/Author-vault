@@ -5,7 +5,7 @@ aliases: ["Anna"]
 canon: book
 continuity: main
 first_seen: "[[arkiv-C01]]"
-sources: ["[[arkiv-C01]]", "[[arkiv-C03]]", "[[arkiv-C04]]"]
+sources: ["[[arkiv-C01]]", "[[arkiv-C03]]", "[[arkiv-C04]]", "[[arkiv-C06]]", "[[arkiv-C09]]", "[[arkiv-C11]]", "[[arkiv-C05]]"]
 status: alive      # alive | dead | missing | legend | deity
 culture: []        # "[[Culture]]"
 languages: []      # "[[Language]]" (native first)
@@ -22,7 +22,8 @@ died: ""
 living: false
 siblings: ["[[Johan Persson (1841)]]"]
 parents: ["[[Per Andersson (ca 1812–1867)]]", "[[Kajsa Jansdotter (1815)]]"]
-spouses: ["[[Erik Svensson]]"]
+spouses: ["[[Erik Svensson]]", "[[Gustaf Lind (1838)]]"]
+children: ["[[Karl Eriksson (1867)]]", "[[Maria Eriksdotter (1870)]]", "[[Hilda Eriksdotter (1873–1874)]]"]
 ---
 # Anna Persdotter
 
@@ -92,14 +93,24 @@ See [[Characters/Anna Persdotter/voice|voice]].
 | [[Per Andersson (ca 1812–1867)]] | kin · far |  |  | biologisk, trolig ([[arkiv-C03]]) |
 | [[Kajsa Jansdotter (1815)]] | kin · mor |  |  | biologisk, trolig ([[arkiv-C03]]) |
 | [[Erik Svensson]] | kin · make/maka |  |  | från 1866, trolig ([[arkiv-C04]]) |
+| [[Karl Eriksson (1867)]] | kin · son |  |  | biologisk, belagd ([[arkiv-C09]]) |
+| [[Maria Eriksdotter (1870)]] | kin · dotter |  |  | biologisk, belagd ([[arkiv-C09]]) |
+| [[Hilda Eriksdotter (1873–1874)]] | kin · dotter |  |  | biologisk, belagd ([[arkiv-C09]]) |
+| [[Gustaf Lind (1838)]] | kin · make/maka |  |  | från 1883-06-10, belagd ([[arkiv-C11]]) |
 
 ### Relation notes
 _One subsection per important relation: history, unspoken things, key shared moments (link Events), how they talk to each other._
 
 ## Timeline
+- **odaterat** · `pov:objective` · `evidence:tradition` · `confidence:belagd` · Gifter om sig med skomakaren Lind efter Eriks död (ingen datering i källan). ([[arkiv-C05]])
 - **1843-05-12** · `pov:objective` · `evidence:primär` · `confidence:trolig` · `at:[[Norrgården]]` · Föds (enligt husförhörslängden), dotter till Per Andersson och Kajsa Jansdotter. ([[arkiv-C03]])
+- **1843-05-12** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Kila socken]]` · Föds i Kila (enligt husförhörslängden). ([[arkiv-C09]])
 - **1844-06** · `pov:objective` · `evidence:tradition` · `confidence:hypotes` · Föds enligt familjetraditionen på midsommardagen 1844 (avviker från husförhörslängden: 1843-05-12). ([[arkiv-C04]])
 - **1866** · `pov:objective` · `evidence:tradition` · `confidence:trolig` · `at:[[Motala]]` · Gifter sig med Erik Svensson i Motala. ([[arkiv-C04]])
+- **1866** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Motala]]` · Inflyttad till Motala från Kila. ([[arkiv-C09]])
+- **1866-10-21** · `pov:objective` · `evidence:primär` · `confidence:belagd` · Gift med Erik Svensson. ([[arkiv-C09]])
+- **1868-01-15** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Motala]]` · Gift med smeden Erik Svensson i Motala; arvinge efter fadern, bevakas av maken. ([[arkiv-C06]])
+- **1883-06-10** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Motala]]` · Vigs som änka i Motala med änklingen, skomakaren Gustaf Lind i Borensberg. Lysning tre söndagar utan jäv. ([[arkiv-C11]])
 
 ## Knowledge
 _What they know, and from when (gates /become)._

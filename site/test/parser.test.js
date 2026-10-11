@@ -106,4 +106,12 @@ describe('the Norrgården genealogy example', async () => {
     expect(Object.values(m.entities).some((e) => e.living)).toBe(true);
     expect(m.warnings.filter((w) => w.kind === 'unresolved-link')).toEqual([]);
   });
+  it('spans six generations, from Anders Persson down to Bengt Holm', async () => {
+    const { kinIndex, familyTree } = await import('../src/lib/kin.js');
+    const { lint } = await import('../src/vault/lint.js');
+    const t = familyTree(m, kinIndex(m), m.nameIndex['anders persson (ca 1780)'], { up: 0, down: 5 });
+    expect(t.rows.map((r) => r.gen)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(t.rows.at(-1).ids.map((id) => m.entities[id].title)).toContain('Bengt Holm (1946)');
+    expect(lint(m).issues).toEqual([]);
+  });
 });

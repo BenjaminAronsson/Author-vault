@@ -5,7 +5,7 @@ aliases: ["Kila"]
 canon: book
 continuity: main
 first_seen: "[[arkiv-C01]]"
-sources: ["[[arkiv-C01]]", "[[arkiv-C03]]"]
+sources: ["[[arkiv-C01]]", "[[arkiv-C03]]", "[[arkiv-C07]]", "[[arkiv-C10]]"]
 tags: [location]
 image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/
 gallery: []

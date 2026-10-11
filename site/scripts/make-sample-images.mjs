@@ -90,6 +90,13 @@ const norrgarden = {
   'characters/Per Andersson (ca 1812–1867)/per.webp': photo('#8a8278', '#dcc09c', '#3a3330', { beard: true }),
   'characters/Kajsa Jansdotter (1815)/kajsa.webp': photo('#5a4430', '#e2c8a6', '#33302c', { scarf: '#3d3530' }),
   'characters/Johan Persson (1841)/johan.webp': photo('#6b4a2c', '#e4c9a5', '#2e2b28', { collar: true }),
+  'characters/Anders Persson (ca 1780)/anders.webp': photo('#b8b0a4', '#d6b996', '#2f2a26', { beard: true }),
+  'characters/Erik Svensson/erik.webp': photo('#3a2a1e', '#dcbf98', '#2a2826', { beard: true }),
+  'characters/Gustaf Lind (1838)/gustaf.webp': photo('#7a7268', '#dec29e', '#34302c', { collar: true }),
+  'characters/Maria Eriksdotter (1870)/maria.webp': photo('#4e3826', '#e8d0b0', '#36302e', { collar: true }),
+  'characters/Karl Eriksson (1867)/karl.webp': photo('#5a3e28', '#e0c4a0', '#2c2a28', { collar: true }),
+  'characters/Lisa Karlsdotter (ca 1858)/lisa.webp': photo('#6a4e34', '#ecd4b4', '#3a3330', { scarf: '#4a3e36' }),
+  'characters/Elsa Maria Berg (1905)/elsa.webp': photo('#3e2c20', '#ecd6b8', '#24303a', { collar: true }),
 };
 const out = /norrg/i.test(root) ? norrgarden : saltmarrow;
 for (const [rel, svg] of Object.entries(out)) {

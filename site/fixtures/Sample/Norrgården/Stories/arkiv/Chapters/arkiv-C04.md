@@ -6,7 +6,7 @@ when: arkiv/C04
 pov: ""
 canon: book
 continuity: main
-characters: ["[[Anna Persdotter]]", "[[Per Andersson (ca 1812–1867)]]", "[[Johan Persson (1841)]]", "[[Erik Svensson]]", "[[Elsa (skribent 1952)]]"]
+characters: ["[[Anna Persdotter]]", "[[Per Andersson (ca 1812–1867)]]", "[[Johan Persson (1841)]]", "[[Erik Svensson]]", "[[Elsa Maria Berg (1905)]]"]
 places: ["[[Motala]]"]
 events: []
 source_kind: "minnen"

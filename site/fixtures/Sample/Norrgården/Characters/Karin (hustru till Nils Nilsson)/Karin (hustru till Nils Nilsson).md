@@ -1,11 +1,11 @@
 ---
 type: character
 world: "[[World]]"
-aliases: ["Elsa"]
+aliases: ["Karin"]
 canon: book
 continuity: main
-first_seen: "[[arkiv-C04]]"
-sources: ["[[arkiv-C04]]"]
+first_seen: "[[arkiv-C07]]"
+sources: ["[[arkiv-C07]]"]
 status: alive      # alive | dead | missing | legend | deity
 culture: []        # "[[Culture]]"
 languages: []      # "[[Language]]" (native first)
@@ -17,9 +17,12 @@ tags: [character]
 image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/
 portraits: []        # [{at: B1-C14, file: "[[mara-scarred.webp]]"}] — shown from that chapter on
 gallery: []
-living: true
+born: ""
+died: ""
+living: false
+spouses: ["[[Nils Nilsson (Sörby)]]"]
 ---
-# Elsa (skribent 1952)
+# Karin (hustru till Nils Nilsson)
 
 
 ## Core
@@ -78,18 +81,17 @@ _How they move, carry themselves, what they notice first, how they smell/sound t
 _Who they were at the start → who they are now → where they seem to be heading._
 
 ## Voice
-See [[Characters/Elsa (skribent 1952)/voice|voice]].
+See [[Characters/Karin (hustru till Nils Nilsson)/voice|voice]].
 
 ## Relations
 | With | Bond (family / love / rival / ally / enemy …) | What they feel | What the other feels back | Changes over time |
 |---|---|---|---|---|
+| [[Nils Nilsson (Sörby)]] | kin · make/maka |  |  | belagd ([[arkiv-C07]]) |
 
 ### Relation notes
 _One subsection per important relation: history, unspoken things, key shared moments (link Events), how they talk to each other._
 
 ## Timeline
-- **1952** · `pov:objective` · `evidence:primär` · `confidence:belagd` · Skriver ner mormor Annas minnen. ([[arkiv-C04]])
-
 ## Knowledge
 _What they know, and from when (gates /become)._
 
@@ -97,5 +99,5 @@ _What they know, and from when (gates /become)._
 ### Objective
 ## Memories
 ```dataview
-LIST FROM "Characters/Elsa (skribent 1952)/memories" SORT when ASC
+LIST FROM "Characters/Karin (hustru till Nils Nilsson)/memories" SORT when ASC
 ```

@@ -11,9 +11,10 @@ kind: genealogy
 # Norrgården
 
 ## Overview
-Ett **påhittat** exempel på en släktvärld (släktforskning): bonden Per Andersson på Norrgården i Kila, hans hustru Kajsa och barnen Johan och Anna, byggt ur fyra påhittade källor: ett husförhör, en dödbok, ett brev och mormors minnen. Alla personer och arkivreferenser är uppdiktade.
+Ett **påhittat** exempel på en släktvärld (släktforskning): bondesläkten på Norrgården i Kila och dess ättlingar i Motala, sex generationer från Anders Persson (ca 1780) till Bengt Holm (1946). Byggt ur elva påhittade källor: dopböcker, husförhör, dödbok, bouppteckning, vigselbok, utflyttningslängd, ett brev och två släktanteckningar. Alla personer och arkivreferenser är uppdiktade.
 
-Visar: datum som tidslinje, källvärde, släktträd, en familjetradition som krockar med kyrkböckerna, och en levande person som hålls dold.
+Visar: datum som tidslinje, källvärde, släktträd över sex generationer, ett fosterbarn (Lisa), ett andra äktenskap (Anna och Gustaf Lind), ett barn som dog litet (Hilda), en utvandring (Johan 1869), en familjetradition som krockar med kyrkböckerna (Annas födelse), en sammanslagen dubblett (Elsa) och en levande person som hålls dold (Bengt).
+
 ## Tone & texture
 _How this world feels — quote the book's own imagery._
 ## Rules (magic / tech / society)

@@ -5,7 +5,7 @@ aliases: ["Johan Persson", "Johan"]
 canon: book
 continuity: main
 first_seen: "[[arkiv-C01]]"
-sources: ["[[arkiv-C01]]", "[[arkiv-C03]]", "[[arkiv-C04]]"]
+sources: ["[[arkiv-C01]]", "[[arkiv-C03]]", "[[arkiv-C04]]", "[[arkiv-C06]]", "[[arkiv-C10]]"]
 status: alive      # alive | dead | missing | legend | deity
 culture: []        # "[[Culture]]"
 languages: []      # "[[Language]]" (native first)
@@ -97,7 +97,10 @@ _One subsection per important relation: history, unspoken things, key shared mom
 ## Timeline
 - **1841-02-03** · `pov:objective` · `evidence:sekundär` · `confidence:trolig` · Föds (enligt tabell i slutet av brevet, ej kyrkbok). ([[arkiv-C01]])
 - **1841-02-03** · `pov:objective` · `evidence:primär` · `confidence:trolig` · `at:[[Norrgården]]` · Föds (enligt husförhörslängden), son till Per Andersson och Kajsa Jansdotter. ([[arkiv-C03]])
+- **1841-02-03** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Kila socken]]` · Föds i Kila (enligt utflyttningslängden). ([[arkiv-C10]])
+- **1868-01-15** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Norrgården]]` · Myndig och hemma på Norrgården; arvinge efter fadern. ([[arkiv-C06]])
 - **1868-03-14** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Kila socken]]` · Skriver brev till systern Anna från Kila: det är kallt, brödet räcker inte och fadern har varit sjuk sedan Kyndelsmäss. ([[arkiv-C01]])
+- **1869-04-20** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Nordamerika]]` · Utflyttad från Norrgården till Nordamerika som dräng; flyttningsbetyg uttaget, reser över Göteborg. Marginal: "emigrerat". ([[arkiv-C10]])
 - **ca 1870** · `pov:objective` · `evidence:tradition` · `confidence:hypotes` · Reser till Amerika och skriver aldrig mer, enligt familjeminnet. ([[arkiv-C04]])
 
 ## Knowledge
@@ -110,3 +113,6 @@ _What they know, and from when (gates /become)._
 ```dataview
 LIST FROM "Characters/Johan Persson (1841)/memories" SORT when ASC
 ```
+
+## Occupation
+- Betecknas dräng i utflyttningslängden 1869. ([[arkiv-C10]])

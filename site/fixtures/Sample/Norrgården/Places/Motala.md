@@ -1,11 +1,11 @@
 ---
 type: location
 world: "[[World]]"
-aliases: []
+aliases: ["Motala stad"]
 canon: book
 continuity: main
 first_seen: "[[arkiv-C03]]"
-sources: ["[[arkiv-C03]]"]
+sources: ["[[arkiv-C03]]", "[[arkiv-C09]]", "[[arkiv-C08]]", "[[arkiv-C05]]"]
 tags: [location]
 image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/
 gallery: []

@@ -30,9 +30,13 @@ export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => t
   const sort = byBirth(model);
   const placed = new Map(); // id → gen
   const rows = new Map();
-  const put = (id, gen) => { if (placed.has(id) || !keep(id)) return false; placed.set(id, gen); if (!rows.has(gen)) rows.set(gen, []); rows.get(gen).push(id); return true; };
+  const partnerOf = new Map(); // people placed only as someone's spouse sit next to that person
+  const put = (id, gen, partner = null) => { if (placed.has(id) || !keep(id)) return false; placed.set(id, gen); if (partner) partnerOf.set(id, partner); if (!rows.has(gen)) rows.set(gen, []); rows.get(gen).push(id); return true; };
+  // spouses in order of marriage (a first husband before a second), else by birth
+  const married = (a, b) => parseDate(kinDetail(model, a, b).from)?.sort ?? Infinity;
+  const spousesOf = (id) => get(idx, 'spouses', id).sort((a, b) => married(id, a) - married(id, b) || sort(a, b));
   put(focus, 0);
-  for (const s of get(idx, 'spouses', focus).sort(sort)) put(s, 0);
+  for (const s of spousesOf(focus)) put(s, 0, focus);
   // ancestors, generation by generation (pedigree order: each child's parents together)
   let layer = [focus];
   for (let g = -1; g >= -up; g--) {
@@ -45,8 +49,18 @@ export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => t
   for (let g = 1; g <= down; g++) {
     const next = [];
     for (const id of layer) for (const c of get(idx, 'children', id).sort(sort)) if (put(c, g)) next.push(c);
-    for (const c of [...next]) for (const s of get(idx, 'spouses', c)) if (put(s, g)) next.push(s);
+    for (const c of [...next]) for (const s of spousesOf(c)) if (put(s, g, c)) next.push(s);
     layer = next;
+  }
+  // seat spouses beside their partner: one spouse to the right; with several, the first marriage left, later ones right
+  for (const [g, ids] of rows) {
+    const out = [];
+    for (const id of ids.filter((x) => !partnerOf.has(x))) {
+      const sp = ids.filter((x) => partnerOf.get(x) === id);
+      if (sp.length > 1) out.push(sp[0], id, ...sp.slice(1)); else out.push(id, ...sp);
+    }
+    for (const id of ids) if (!out.includes(id)) out.push(id);
+    rows.set(g, out);
   }
   const edges = [], spouses = [];
   for (const [id, g] of placed) {

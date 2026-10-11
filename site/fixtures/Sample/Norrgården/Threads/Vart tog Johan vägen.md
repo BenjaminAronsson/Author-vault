@@ -3,7 +3,7 @@ type: thread
 kind: forskningsfråga
 world: "[[World]]"
 canon: draft
-status: open
+status: resolved
 characters: ["[[Johan Persson (1841)]]"]
 tags: [thread]
 ---
@@ -14,3 +14,6 @@ Mormors minnen säger att Johan reste till Amerika omkring 1870 och aldrig skrev
 ## Källor som skulle avgöra
 - Kila utflyttningslängd 1868–1872
 - Emigrantregistret / passagerarlistor från Göteborg
+
+## Svar
+Utflyttningslängden visar att Johan reste till Nordamerika över Göteborg den 20 april 1869 ([[arkiv-C10]]). Familjens "omkring 1870" stämmer ungefär, men "skrev aldrig mer" stämmer inte helt: brevet till Anna är från 1868, året innan han reste.

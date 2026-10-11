@@ -5,7 +5,7 @@ aliases: []
 canon: book
 continuity: main
 first_seen: "[[arkiv-C02]]"
-sources: ["[[arkiv-C02]]", "[[arkiv-C03]]"]
+sources: ["[[arkiv-C02]]", "[[arkiv-C03]]", "[[arkiv-C07]]", "[[arkiv-C06]]", "[[arkiv-C10]]"]
 tags: [location]
 image: "[[norrgarden-1890.webp]]"
 gallery: []
@@ -16,6 +16,8 @@ part_of: "[[Kila socken]]"
 ## Description
 _Use the book's own imagery and sensory detail._
 Gård i Kila socken. Husförhörslängden 1840–45 (AI:12 s. 47) visar hushållet: bonden Per Andersson, hustrun Kajsa, barnen Johan och Anna samt pigan Brita Olsdotter 1844–45. ([[arkiv-C03]])
+I bouppteckningen 1868 anges halva gården Norrgården som 1/4 mantal, med 2 hästar, 4 kor och 6 får. ([[arkiv-C06]])
+Johan Persson, dräng, utflyttade härifrån till Nordamerika 1869-04-20 (utflyttningslängd Kila B:2 s. 5). ([[arkiv-C10]])
 
 ## Where & how
 - **Part of / contains:** 

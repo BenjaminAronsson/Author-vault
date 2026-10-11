@@ -1,12 +1,12 @@
 ---
 type: voice
-character: "[[Elsa (skribent 1952)]]"
+character: "[[Maria Eriksdotter (1870)]]"
 world: "[[World]]"
 language: ""
 tags: [voice]
 image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/
 ---
-# Elsa (skribent 1952) — voice
+# Maria Eriksdotter (1870) — voice
 
 ## Quote bank (verbatim, from the book)
 ### Angry
@@ -15,6 +15,7 @@ image: ""            # "[[file.webp]]" in <World>/_assets/<type>/<Name>/
 ### Joking
 ### Lying / evasive
 ### Everyday
+> "Han var snäll mot oss barn" — [[arkiv-C05]]
 
 ## Diction
 - **Register / formality:** 

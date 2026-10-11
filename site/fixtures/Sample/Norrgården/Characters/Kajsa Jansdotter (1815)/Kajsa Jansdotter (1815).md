@@ -5,7 +5,7 @@ aliases: ["Kajsa Jansdotter", "Catharina Jansdotter"]
 canon: book
 continuity: main
 first_seen: "[[arkiv-C03]]"
-sources: ["[[arkiv-C03]]"]
+sources: ["[[arkiv-C03]]", "[[arkiv-C06]]"]
 status: alive      # alive | dead | missing | legend | deity
 culture: []        # "[[Culture]]"
 languages: []      # "[[Language]]" (native first)
@@ -90,6 +90,7 @@ See [[Characters/Kajsa Jansdotter (1815)/voice|voice]].
 | [[Johan Persson (1841)]] | kin · son |  |  | biologisk, trolig ([[arkiv-C03]]) |
 | [[Anna Persdotter]] | kin · dotter |  |  | biologisk, trolig ([[arkiv-C03]]) |
 | [[Per Andersson (ca 1812–1867)]] | kin · make/maka |  |  | belagd ([[arkiv-C03]]) |
+| [[Lisa Karlsdotter (ca 1858)]] | hushåll · fosterbarn |  |  | från 1862, på [[Norrgården]], belagd ([[arkiv-C06]]) |
 
 ### Relation notes
 _One subsection per important relation: history, unspoken things, key shared moments (link Events), how they talk to each other._
@@ -97,6 +98,7 @@ _One subsection per important relation: history, unspoken things, key shared mom
 ## Timeline
 - **1815** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Västra Ny]]` · Föds i Västra Ny. ([[arkiv-C03]])
 - **1840–45** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Norrgården]]` · Hustru på Norrgården, Kila. ([[arkiv-C03]])
+- **1868-01-15** · `pov:objective` · `evidence:primär` · `confidence:belagd` · `at:[[Norrgården]]` · Änka efter Per Andersson, 52 år; uppger boet på heder och samvete. ([[arkiv-C06]])
 
 ## Knowledge
 _What they know, and from when (gates /become)._
