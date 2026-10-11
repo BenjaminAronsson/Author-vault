@@ -11,6 +11,8 @@
 //   vault add-story   <World> <id> [--from <dir>] [--title …] [--order N] [--continuity c] [--canon book]
 //   vault import-books <World> <convert-output-dir> [B1,B3…]       add stories from an omnibus books.tsv
 //   vault add-archive <World> <folder|file…>                        genealogy: add new .txt/.docx/.md/.pdf research files
+//   vault add-media   <World> <file|folder…> [--depicts "A, B"] [--date 1931] [--place P] [--event E] [--caption …] [--source arkiv-C03]
+//                                                                  photos → compressed WebP + tagged Media notes, commits
 //   vault export-gedcom <World> [out.ged] [--include-living]       genealogy: GEDCOM 5.5.1 for Disgen, MyHeritage…
 //
 // Needs the viewer's dependencies once:  npm install --prefix site
@@ -139,6 +141,27 @@ if (cmd === 'plan') {
   rmSync(tmp, { recursive: true, force: true });
   for (const a of r.added) console.log(`✓ ${a.cid}  ${a.file}${a.images ? `  · ${a.images} image(s)` : ''}${a.replaces ? `  (new version of ${a.replaces})` : ''}`);
   console.log(`${r.added.length} added, ${r.skipped.length} already in the archive`);
+} else if (cmd === 'add-media') {
+  const { addMedia, collectMedia } = await lib('vault/media.js');
+  const { createRequire } = await import('node:module');
+  const sharp = createRequire(join(ROOT, 'site/package.json'))('sharp');
+  const opts = {
+    depicts: (flag('depicts', '') ?? '').split(/\s*[,;]\s*/).filter(Boolean), date: flag('date'), place: flag('place'), event: flag('event'),
+    caption: flag('caption', ''), source: flag('source'), canon: flag('canon', 'book'), sharp,
+  };
+  const noCommit = bool('no-commit');
+  const [w, ...paths] = argv;
+  const dir = worldDir(w);
+  const files = collectMedia(paths.length ? paths : die('file or folder required'));
+  if (!files.length) die('No pictures found (jpg, png, webp, gif, avif, tif, heic)');
+  let bin = 0, bout = 0;
+  for (const f of files) {
+    const r = await addMedia(dir, f, opts);
+    bin += r.bytesIn; bout += r.bytesOut;
+    console.log(`  + ${r.note}${r.date ? ` · ${r.date}` : ''} · ${(r.bytesIn / 1024).toFixed(0)} → ${(r.bytesOut / 1024).toFixed(0)} KB`);
+  }
+  console.log(`${files.length} photo(s), ${(bin / 1048576).toFixed(1)} → ${(bout / 1048576).toFixed(1)} MB. Tag who is in each: edit \`depicts:\` in the Media notes.`);
+  if (!noCommit) execFileSync(join(ROOT, 'tools/world-repo.sh'), ['commit', w, `${files.length} photo(s) added`], { stdio: 'inherit' });
 } else if (cmd === 'export-gedcom') {
   const { readWorld } = await lib('vault/apply.js');
   const { parseWorld } = await lib('parser/parse.js');

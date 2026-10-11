@@ -5,6 +5,7 @@
   import Avatar from './Avatar.svelte';
   import EntityLink from './EntityLink.svelte';
   import Markdown from './Markdown.svelte';
+  import Gallery from './Gallery.svelte';
   import { kinIndex, lifespan, lifeLine, ageAt, ageLabel } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
   import { relationsAt } from '../lib/relations.js';
@@ -92,6 +93,7 @@
       {#if blurb}<div class="small blurb"><Markdown text={blurb} /></div>{/if}
     {/if}
 
+    {#if e.media?.length}<div class="photos"><Gallery id={e.id} strip /></div>{/if}
     <div class="acts">
       <button class="btn primary" onclick={() => go(() => store.open(e.id))}>Open</button>
       {#if person && gen}<button class="btn" onclick={() => go(() => store.go('family', e.id))}>Family tree</button>{/if}
@@ -104,6 +106,7 @@
 {/if}
 
 <style>
+  .photos { margin: .4rem 0; }
   .ic { position: fixed; z-index: 60; width: 320px; max-width: calc(100vw - 16px); padding: .8rem .9rem; box-shadow: 0 12px 32px rgba(0, 0, 0, .22); display: grid; gap: .5rem; animation: pop .12s ease-out; }
   @keyframes pop { from { opacity: 0; transform: scale(.97); } }
   .hd { display: flex; gap: .7rem; align-items: center; }

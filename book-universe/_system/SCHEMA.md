@@ -142,6 +142,9 @@ Chapter notes' `characters:` and `places:` frontmatter are the fallback for pres
 - Files live in `<World>/_assets/<type>/<Name>/` (type = characters, places, items, creatures, factions, religions, cultures, world…).
 - `image:` is the main picture. `portraits: [{at: B1-C14, file: "[[x.webp]]"}]` gives pictures that apply from that step on (in the viewer they change with the reading bookmark). `gallery: []` holds extras.
 - The create skills accept an image path: copy it into `_assets/…` and set `image:`.
+- **Photos (Media notes)**: a photo or scan that shows several people, a place or an event is a note in `<World>/Media/`, and the picture itself goes in `_assets/media/`. Add them with `node tools/vault.mjs add-media "<World>" <file|folder> [--depicts "A, B"] [--date 1931] [--place P] [--event E] [--caption …] [--source arkiv-C03]`. Pictures are compressed to WebP (at most 2000 px, quality 80, turned upright, original not kept). The date is taken from EXIF when not given. Frontmatter:
+  `type: media` · `file: "_assets/media/x.webp"` · `depicts: ["[[Person]]", …]` · `date` · `place: "[[Place]]"` · `event: "[[Event]]"` · `caption` · `source: "[[arkiv-C03]]"` · `canon` · optional `regions: [{who: "[[Person]]", x, y, w, h}]` (face boxes, fractions of the picture from the top-left).
+  The viewer shows each photo on the pages, family cards and lightbox of everyone and everything it is tagged with. Photos that show a living person stay hidden like the person does. To tag more people, append to `depicts:`.
 - **Maps**: a map belongs to the world or to any place that has its own map.
   - **The map itself**: `map_image: "[[map.webp]]"`, or `map_image: sketch` for a hand-arranged parchment map with no picture. `World.md` always has a map (a sketch if nothing is set).
   - **A place's position**: `map: {x: 0.42, y: 0.31}` is a fraction of the map's width and height from the top-left. It is a position on the map of the place's nearest `part_of` ancestor that has its own map, otherwise on the world map. So a tavern inside a city with its own map is positioned on the city map.
@@ -178,7 +181,7 @@ A world made with `vault init-world "<World>" --kind genealogy` (`World.md`: `ki
 - **Lint** adds: `possible-duplicate`, `contradiction`, `parent-age`, `born-after-parent-death`, `died-before-born`, `one-sided-kin`, `maybe-living`.
 - **Open research questions** are Threads with `kind: forskningsfråga`, listing which record would settle them.
 - **`/become`** takes a date: `vault briefing "<World>" "<Name>" --at 1880-06-01`. The briefing includes age and family as of that date.
-- **Images in research files:** photos and scans embedded in a .docx are copied to `_assets/sources/arkiv-Cxx/` and linked at the end of the source under `## Bilder i filen`. A portrait of a known person can become their `image:`.
+- **Images in research files:** photos and scans embedded in a .docx are copied to `_assets/sources/arkiv-Cxx/` and linked at the end of the source under `## Bilder i filen`. A portrait of a known person can become their `image:`. Photos that show people, a place or an occasion become Media notes through the patch's `media` (see Patches).
 - **GEDCOM export:** `vault export-gedcom "<World>" [out.ged] [--include-living]` writes GEDCOM 5.5.1 for other genealogy programs:
   - people with name variants, birth and death (date, place, source and quality from `confidence`), and other dated events
   - families built from parents and spouses, with the marriage year
@@ -197,6 +200,7 @@ A world made with `vault init-world "<World>" --kind genealogy` (`World.md`: `ki
 | Key | Shape | Written to |
 |---|---|---|
 | `chapter` | `{title, pov, characters[] (on scene), mentioned[] (only talked about), places[] (where scenes happen), mentioned_places[], events[], summary, scenes[], key_lines[{who,text}], state_changes[], threads[]}` | `Stories/<story>/Chapters/<cid>.md` |
+| `media` | `[{file (already under _assets/), depicts[], date, place, event, caption, title}]` | `Media/<title>.md` (one per file, never twice) |
 | `entities` | `[{name, type, aliases[], fields{}}]` | new notes from templates, plus aliases |
 | `timeline` | `[{entity, text, at, presence (mentioned\|remembered, omit when on scene), rel[{to,bond,n}], status, goal[{goal,status}], pov}]` | `## Timeline` |
 | `rows` | `[{entity, section: Goals\|Fears\|Relations, row{…}, update[]}]` | the section's table |

@@ -4,6 +4,7 @@
   import { T } from '../lib/strings.js';
   import Avatar from '../components/Avatar.svelte';
   import EntityLink from '../components/EntityLink.svelte';
+  import Gallery from '../components/Gallery.svelte';
   import Markdown from '../components/Markdown.svelte';
   import { colorOf } from '../lib/relations.js';
 
@@ -25,7 +26,8 @@
       <h1>{ch.title}</h1>
       {#each facts as { e, t } (e.id + t.text)}
         <p class="fact big"><EntityLink id={e.id} />: <Markdown text={t.text} />{#if t.evidence} <span class="chip">{t.evidence}</span>{/if}</p>
-      {:else}<p class="muted">Nothing recorded on this date.</p>{/each}
+      {:else}{#if !ch.media?.length}<p class="muted">Nothing recorded on this date.</p>{/if}{/each}
+      {#if ch.media?.length}<div class="stepphotos">{#each ch.media as m (m)}<Gallery id={m} />{/each}</div>{/if}
     {:else}
     <div class="where small muted">{story?.title} · chapter {ch.num} of {story?.chapters.length}{#if ch.canon === 'expansion'} · <span class="exp-mark">EXP</span>{/if}</div>
     <h1>{ch.title}</h1>
@@ -61,6 +63,7 @@
 </div>
 
 <style>
+  .stepphotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .6rem; margin: .6rem 0; }
   .reader { max-width: 760px; margin: 0 auto; padding: 1.5rem 1.2rem 3rem; display: grid; gap: .9rem; }
   h1 { font-size: 2.4rem; margin: 0; }
   .big { font-size: 1.25rem; line-height: 1.65; }

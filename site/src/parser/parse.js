@@ -13,7 +13,7 @@ const TYPE_BY_FOLDER = {
   Characters: 'character', Places: 'location', Factions: 'faction', Items: 'item', Concepts: 'concept',
   Events: 'event', History: 'era', Plots: 'plot', Threads: 'thread', Expansions: 'expansion',
   Cultures: 'culture', Languages: 'language', Religions: 'religion', Creatures: 'creature',
-  Magic: 'magic', Technology: 'technology',
+  Magic: 'magic', Technology: 'technology', Media: 'media',
 };
 const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif|svg)$/i;
 const asArray = (v) => (v == null || v === '' ? [] : Array.isArray(v) ? v : [v]);
@@ -27,8 +27,9 @@ export function parseWorld({ world, files, images = [] }) {
   const warnings = [];
   const entities = {};
   const nameIndex = {};
-  const imageIndex = {};
-  for (const p of images) imageIndex[p.split('/').pop().toLowerCase()] = p;
+  const imageIndex = {}, imagePaths = {};
+  // by path (exact, or under _assets/) first; a bare file name only when it's unambiguous enough (first wins)
+  for (const p of images) { imagePaths[p.toLowerCase()] = p; imageIndex[p.split('/').pop().toLowerCase()] ??= p; }
 
   for (const f of files) {
     if (!/\.md$/i.test(f.path) || f.path.startsWith('_') || f.path.includes('/_')) continue;
@@ -63,7 +64,8 @@ export function parseWorld({ world, files, images = [] }) {
   const resolveImage = (ref) => {
     const n = firstLink(ref) ?? (typeof ref === 'string' ? ref : null);
     if (!n) return null;
-    return imageIndex[n.split('/').pop().toLowerCase()] ?? null;
+    const k = n.replace(/^\.?\//, '').toLowerCase();
+    return imagePaths[k] ?? imagePaths[`_assets/${k}`] ?? imageIndex[k.split('/').pop()] ?? null;
   };
 
   // Stories & chapters
@@ -124,7 +126,7 @@ export function parseWorld({ world, files, images = [] }) {
     const sorted = [...labels].sort((a, b) => (a === UNDATED ? -1 : b === UNDATED ? 1 : compareDates(a, b)));
     stories[TIME_STORY] = { id: TIME_STORY, entity: null, title: 'Tid', order: 0, continuity: 'main', canon: 'book', placement: '', pov_style: '', chapters: sorted, timeAxis: true };
     sorted.forEach((label, i) => {
-      chapters[label] = { id: label, entity: null, story: TIME_STORY, num: i + 1, title: label, pov: null, characters: [], places: [], events: [], summary: '', canon: 'book', continuity: 'main', inWorld: label, date: parseDate(label), timeStep: true };
+      chapters[label] = { id: label, entity: null, story: TIME_STORY, num: i + 1, title: label, pov: null, characters: [], mentioned: [], places: [], events: [], media: [], summary: '', canon: 'book', continuity: 'main', inWorld: label, date: parseDate(label), timeStep: true };
     });
   }
 
@@ -148,6 +150,16 @@ export function parseWorld({ world, files, images = [] }) {
       .map((p) => ({ at: step(p?.at), image: resolveImage(p?.file ?? p?.image) }))
       .filter((p) => p.image);
     e.gallery = asArray(e.fm.gallery).map(resolveImage).filter(Boolean);
+    if (e.type === 'media') {
+      // a photo or scan, tagged with who is in it, where, when and at what event
+      e.image = resolveImage(e.fm.file ?? e.fm.image);
+      e.depicts = wikilinks(e.fm.depicts).map(resolve).filter(Boolean);
+      e.mediaPlace = resolve(firstLink(e.fm.place));
+      e.mediaEvent = resolve(firstLink(e.fm.event));
+      e.mediaDate = e.fm.date != null ? String(e.fm.date) : null;
+      e.caption = String(e.fm.caption ?? '').trim();
+      e.regions = asArray(e.fm.regions).map((r) => ({ who: resolve(firstLink(r?.who)), x: +r?.x, y: +r?.y, w: +r?.w, h: +r?.h })).filter((r) => r.who && [r.x, r.y, r.w, r.h].every(Number.isFinite));
+    }
     e.mapSketch = String(e.fm.map_image ?? '').trim() === 'sketch';
     e.mapImage = e.mapSketch ? null : resolveImage(e.fm.map_image);
     e.partOf = resolve(firstLink(e.fm.part_of));
@@ -261,10 +273,18 @@ export function parseWorld({ world, files, images = [] }) {
         if (e.fm.living !== true) c.summary += `${c.summary ? '\n' : ''}- [[${e.title}]]: ${t.text}`;
         if (!offstage && t.tags.at && entities[t.tags.at] && !c.places.includes(t.tags.at)) c.places.push(t.tags.at);
       }
+      const md = e.type === 'media' && e.mediaDate && chapters[e.mediaDate.trim()];
+      if (md?.timeStep) { md.media.push(e.id); md.summary += `${md.summary ? '\n' : ''}- Photo [[${e.title}]]${e.caption ? `: ${e.caption}` : ''}`; }
       const d = e.type === 'event' && (e.fm.date ?? e.fm.in_world);
       if (d != null && chapters[String(d).trim()]?.timeStep) chapters[String(d).trim()].events.push(e.id);
     }
   }
+
+  // photos back onto everyone and everything they show: entity.media = [media ids], oldest first
+  for (const e of Object.values(entities)) if (e.type !== 'media') e.media = [];
+  const media = Object.values(entities).filter((e) => e.type === 'media' && e.image)
+    .sort((a, b) => String(a.mediaDate ?? '9999').localeCompare(String(b.mediaDate ?? '9999')));
+  for (const m of media) for (const t of new Set([...m.depicts, m.mediaPlace, m.mediaEvent].filter(Boolean))) entities[t]?.media?.push(m.id);
 
   const worldEntity = entities.World ?? null;
   return {

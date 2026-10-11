@@ -53,7 +53,17 @@ for (const world of worlds) {
   model.imageUrls = {};
   const used = new Set();
   for (const e of Object.values(model.entities)) [e.image, e.mapImage, ...e.portraits.map((p) => p.image), ...e.gallery].filter(Boolean).forEach((p) => used.add(p));
+  // photos (Media notes, galleries) also get a large version for the lightbox
+  const large = new Set(Object.values(model.entities).flatMap((e) => (e.type === 'media' ? [e.image] : e.gallery)).filter(Boolean));
+  model.imageFullUrls = {};
   let n = 0;
+  for (const p of large) {
+    const name = `${String(n++).padStart(3, '0')}-${slug(basename(p).replace(/\.\w+$/, ''))}-full.webp`;
+    try {
+      await sharp(join(dir, p)).rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toFile(join(imgDir, name));
+      model.imageFullUrls[p] = `data/${slug(world)}/img/${name}`;
+    } catch (err) { model.warnings.push({ kind: 'image', path: p, msg: err.message }); }
+  }
   for (const p of used) {
     const name = `${String(n++).padStart(3, '0')}-${slug(basename(p).replace(/\.\w+$/, ''))}.webp`;
     try {

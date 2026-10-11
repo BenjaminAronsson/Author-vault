@@ -94,5 +94,5 @@ You get the world, the source id (e.g. `arkiv-C03`), the source file path, a **c
 - **Quotes** must be **verbatim** from the file. Letters and memoirs give people their voice for `/become`.
 - **Write in the source's language** and keep old spellings in quotes and names.
 - **Never invent.** Mark inferences `(inferred)` and give them confidence `trolig` or `hypotes`.
-- **Pictures:** if the source ends with `## Bilder i filen` and the text says who a picture shows ("Anna med barnen, 1890"), set that person's `"image": "[[file name]]"` in `fields`. Otherwise mention the pictures in the `summary`.
+- **Pictures:** if the source ends with `## Bilder i filen` and the text says who a picture shows ("Anna med barnen, 1890"), set that person's `"image": "[[file name]]"` in `fields` when it is a portrait of one person. Also give every picture a `media` entry, so it shows on everyone it depicts: `"media": [{"file": "_assets/sources/arkiv-C03/image1.jpg", "depicts": ["…exact note names…"], "date": "ca 1890", "place": "…", "caption": "Anna med barnen"}]`. If the text doesn't say who is in a picture, leave `depicts` empty and say so in the `caption`.
 - **Living people:** anyone born within the last 100 years with no recorded death gets `"living": true`. They stay private.

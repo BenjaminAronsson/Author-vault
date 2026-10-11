@@ -331,3 +331,37 @@ describe('ages', () => {
     expect(ageAt({ born: '1900', living: true }, at('2020')).age).toBe(120); // living: shown as is
   });
 });
+
+describe('photos', () => {
+  it('compresses a picture into a tagged Media note that links back to the people in it', async () => {
+    const { default: sharp } = await import('sharp');
+    const { addMedia } = await import('../src/vault/media.js');
+    apply(HUSFORHOR);
+    const big = join(vault, 'Bröllop_1866.png');
+    await sharp({ create: { width: 3000, height: 2000, channels: 3, background: '#a87' } }).png().toFile(big);
+    const r = await addMedia(dir, big, { depicts: ['Anna Persdotter (1843–1910)'], date: '1866', place: 'Norrgården', caption: 'Bröllopet', sharp });
+    expect(r.note).toBe('Media/Bröllop 1866.md');
+    expect(r.file).toBe('_assets/media/Bröllop 1866.webp');
+    const meta = await sharp(join(dir, r.file)).metadata();
+    expect(Math.max(meta.width, meta.height)).toBe(2000);
+    // a second photo with the same name never overwrites the first
+    expect((await addMedia(dir, big, { sharp })).note).toBe('Media/Bröllop 1866 2.md');
+    const m = model();
+    const anna = m.nameIndex['anna persdotter'];
+    const photo = m.entities['Media/Bröllop 1866'];
+    expect(photo.image).toBe(r.file);
+    expect(photo.depicts).toEqual([anna]);
+    expect(m.entities[anna].media).toContain('Media/Bröllop 1866');
+    expect(m.entities[m.nameIndex['norrgården']].media).toContain('Media/Bröllop 1866');
+  });
+  it('a patch tags pictures already in the world, once', async () => {
+    apply(HUSFORHOR);
+    const { mkdirSync } = await import('node:fs');
+    mkdirSync(join(dir, '_assets/sources/arkiv-C01'), { recursive: true });
+    writeFileSync(join(dir, '_assets/sources/arkiv-C01/image1.jpg'), 'x');
+    const p = { media: [{ file: '_assets/sources/arkiv-C01/image1.jpg', depicts: ['Per Andersson (1812–1867)'], caption: 'Per vid ladan', date: 'ca 1860' }] };
+    apply(p); apply(p);
+    expect(read('Media/Per vid ladan.md')).toContain('depicts: ["[[Per Andersson (1812–1867)]]"]');
+    expect(existsSync(join(dir, 'Media/Per vid ladan 2.md'))).toBe(false);
+  });
+});

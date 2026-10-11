@@ -8,6 +8,7 @@
   import Web from '../components/Web.svelte';
   import TimelineList from '../components/TimelineList.svelte';
   import FamilyTree from '../components/FamilyTree.svelte';
+  import Gallery from '../components/Gallery.svelte';
   import { lifespan, lifeLine, ageAt, ageLabel } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
   import { relationsAt, colorOf, describe } from '../lib/relations.js';
@@ -96,6 +97,10 @@
     </div>
     {#if nowQuote}<p class="quote">“{nowQuote.text}” <span class="small muted">— {nowQuote.mood.toLowerCase()}, {nowQuote.source}</span></p>{/if}
   </section>
+
+  {#if e.media?.length || e.gallery?.length}
+    <section class="card"><h2>Photos</h2><Gallery {id} /></section>
+  {/if}
 
   {#if gen || e.kin}
     <section class="card">

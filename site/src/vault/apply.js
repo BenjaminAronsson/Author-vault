@@ -8,6 +8,7 @@ import { parseWorld } from '../parser/parse.js';
 import { setField, setRaw } from '../lib/frontmatter.js';
 import { appendToSection, appendToSubsection, upsertTableRow, stripPlaceholders, norm, sectionRange } from './md.js';
 import { compareDates, compareDateClaims } from '../lib/dates.js';
+import { mediaNote, freeMediaPath } from './media.js';
 
 export const TYPE_DIR = {
   character: 'Characters', location: 'Places', place: 'Places', faction: 'Factions', item: 'Items', concept: 'Concepts',
@@ -375,6 +376,16 @@ export function applyPatch(world, patch, opts) {
       if (!verbatim(s)) { report.rejectedQuotes.push({ where: 'style sample', who: story, text: s }); continue; }
       world.edit(srel, (L) => appendToSection(L, 'Sample passages', [`> ${String(s).trim().replace(/\n+/g, ' ')}`, `— ${link(cid)}`]));
     }
+  }
+
+  // photos from the source (e.g. pictures in a .docx, already under _assets/): one tagged Media note each
+  for (const m of patch.media ?? []) {
+    const file = String(m.file ?? '').replace(/^\.?\//, '');
+    if (!file || !existsSync(world.path(file))) { report.warnings.push(`media: no file ${file || '(empty)'}`); continue; }
+    if (Object.values(world.model.entities).some((e) => e.type === 'media' && String(e.fm.file ?? '') === file)) continue; // already has its note
+    for (const d of m.depicts ?? []) ent(d, 'character');
+    const title = String(m.title ?? m.caption ?? file.split('/').pop().replace(/\.\w+$/, '')).slice(0, 80);
+    world.write(freeMediaPath(world.dir, title), mediaNote({ file, title, depicts: (m.depicts ?? []).map(canonName), date: m.date ?? null, place: m.place ?? null, event: m.event ?? null, caption: m.caption ?? '', source: cid, canon }));
   }
 
   // glossary

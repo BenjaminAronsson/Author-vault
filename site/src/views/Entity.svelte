@@ -7,6 +7,7 @@
   import Actions from '../components/Actions.svelte';
   import TimelineList from '../components/TimelineList.svelte';
   import { sectionMarkdown, wikilinks } from '../parser/markdown.js';
+  import Gallery from '../components/Gallery.svelte';
 
   let { id } = $props();
   const e = $derived(store.model.entities[id]);
@@ -67,6 +68,7 @@
       <div class="card small">Opened {e.openedAt ?? '—'} · {e.closedAt && store.stepVisible(e.closedAt) ? `closed ${e.closedAt}` : 'still open'}
         {#if e.cast?.length} · {#each e.cast as c, i (c)}{#if i}{', '}{/if}<EntityLink id={c} />{/each}{/if}</div>
     {/if}
+    {#if e.type === 'media' || e.media?.length || e.gallery?.length}<section class="card"><h2>{e.type === 'media' ? 'Photo' : 'Photos'}</h2><Gallery id={e.id} /></section>{/if}
     {#if e.preamble}<div class="card"><Markdown text={e.preamble} /></div>{/if}
     {#each e.sectionOrder as h (h)}
       {#if h === 'Timeline'}

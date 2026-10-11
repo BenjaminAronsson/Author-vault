@@ -22,7 +22,8 @@ A genealogy world has no chapters. Each file is a **source**, cited as `[[arkiv-
    - Old `.doc` files are skipped: ask the user to save them as `.docx`.
    - Files already imported with identical content are skipped. A changed file becomes a new source marked as a new version of the old one, which stays read-only.
    - Originals are kept in `_sources/arkiv/original/`.
-   - Photos and scans embedded in .docx files are kept in `_assets/sources/`.
+   - Photos and scans embedded in .docx files are kept in `_assets/sources/`. The genealogist tags them as Media notes during extraction.
+   - **Loose photos** (a folder of family pictures, not in a .docx) go in with `node tools/vault.mjs add-media "<World>" <folder> [--depicts "A, B"] [--date …]`. They are compressed and become Media notes, and the command commits. Afterwards, ask the user who is in each picture and add the names to `depicts:`.
 3. **Commit:** `tools/world-repo.sh commit "<World>" "Archive: <n> files added"`.
 4. **Tell the user** how many files and words were added, and what extraction will cost:
    ```
