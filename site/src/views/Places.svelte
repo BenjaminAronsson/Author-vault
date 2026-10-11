@@ -6,6 +6,7 @@
   import WorldMap from '../components/WorldMap.svelte';
   import TravelGraph from '../components/TravelGraph.svelte';
   import { parseDate } from '../lib/dates.js';
+  import PanZoom from '../components/PanZoom.svelte';
 
   let mapMode = $state('map');
   let allMoves = $state(false);
@@ -130,6 +131,7 @@
     {#if dom}
       <section class="card">
         <div class="label">In-world time</div>
+        <PanZoom>
         <svg viewBox="0 0 1000 180" class="bands" role="img" aria-label="Eras and dated events">
           {#each ticks as t (t)}<line x1={X(t)} x2={X(t)} y1="10" y2="150" class="tick" /><text x={X(t)} y="168" text-anchor="middle" class="tl">{t}</text>{/each}
           {#each bands as b, i (b.e.id)}
@@ -145,6 +147,7 @@
             </g>
           {/each}
         </svg>
+        </PanZoom>
       </section>
     {/if}
     <div class="grid2">

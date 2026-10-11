@@ -1,4 +1,5 @@
 <script>
+  import PanZoom from './PanZoom.svelte';
   // "Movie narrative chart": each character is a line across chapters; lines bunch together when they share a place.
   import { store } from '../lib/store.svelte.js';
 
@@ -91,6 +92,7 @@
   {#if picked}<button class="link small" onclick={() => (picked = null)}>reset to most present</button>{/if}
 </div>
 <div class="sl" bind:this={scroller}>
+  <PanZoom>
   <svg {width} height={layout.height} role="img" aria-label="Storylines: characters across chapters, grouped by place">
     {#each placeOrder as p, k (p)}
       {@const L = layout.lane[p]}
@@ -116,6 +118,7 @@
       <line x1="0" x2="0" y1="24" y2={layout.height - 10} class="book" />
     </g>
   </svg>
+  </PanZoom>
   <p class="small muted">Lines run through the place each character is in. Big dots: on the page in that chapter; small dots: last known place. Hover a line to isolate it.</p>
 </div>
 

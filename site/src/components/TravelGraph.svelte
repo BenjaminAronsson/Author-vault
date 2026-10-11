@@ -1,4 +1,5 @@
 <script>
+  import PanZoom from './PanZoom.svelte';
   import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from 'd3';
   import { store } from '../lib/store.svelte.js';
   import Avatar from './Avatar.svelte';
@@ -37,6 +38,7 @@
   });
 </script>
 
+<PanZoom>
 <svg viewBox={box} class="tg" role="img" aria-label="Travel graph of places">
   {#each layout.links as l, i (i)}
     <line x1={l.source.x} y1={l.source.y} x2={l.target.x} y2={l.target.y} class={l.kind} stroke-width={l.kind === 'move' ? 1.5 + l.n * 1.2 : 1} />
@@ -58,6 +60,7 @@
     </g>
   {/each}
 </svg>
+</PanZoom>
 
 <style>
   .tg { width: 100%; height: 420px; display: block; }

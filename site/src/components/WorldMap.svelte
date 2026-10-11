@@ -6,6 +6,7 @@
   import { uploadImage } from '../lib/images.js';
   import { editField } from '../lib/edits.js';
   import Avatar from './Avatar.svelte';
+  import { registerZoom } from '../lib/zoomKeys.js';
   import EntityLink from './EntityLink.svelte';
 
   let { places } = $props();
@@ -41,11 +42,28 @@
     tx = cx - (cx - tx) * (nk / k); ty = cy - (cy - ty) * (nk / k); k = nk;
     if (k === 1) { tx = 0; ty = 0; }
   }
+  // same feel as PanZoom: mouse wheel / pinch zoom around the pointer, trackpad scroll pans when zoomed,
+  // and at the limits the page scrolls on
   function wheel(ev) {
-    ev.preventDefault();
+    const unit = ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? vp.clientHeight : 1;
+    const dx = ev.deltaX * unit, dy = ev.deltaY * unit;
     const r = vp.getBoundingClientRect();
-    zoomAt(ev.deltaY < 0 ? 1.15 : 1 / 1.15, ev.clientX - r.left, ev.clientY - r.top);
+    const mouseWheel = ev.deltaMode !== 0 || (ev.deltaX === 0 && Math.abs(ev.deltaY) >= 40 && Number.isInteger(ev.deltaY));
+    if (ev.ctrlKey || mouseWheel) {
+      const nk = Math.min(8, Math.max(1, k * Math.exp(-dy * (ev.ctrlKey ? 0.01 : 0.0018))));
+      if (nk === k) { if (ev.ctrlKey) ev.preventDefault(); return; }
+      ev.preventDefault();
+      zoomAt(nk / k, ev.clientX - r.left, ev.clientY - r.top);
+      return;
+    }
+    if (k === 1) return;
+    ev.preventDefault();
+    tx = Math.min(0, Math.max(r.width - r.width * k, tx - dx));
+    ty = Math.min(0, Math.max(r.height - r.height * k, ty - dy));
   }
+  // non-passive, so the wheel can stop the page from scrolling while it zooms (Svelte's onwheel is passive)
+  $effect(() => { if (!vp) return; vp.addEventListener('wheel', wheel, { passive: false }); return () => vp.removeEventListener('wheel', wheel); });
+  $effect(() => { if (vp) return registerZoom({ el: vp, zoom: (f) => zoomBtn(f), reset: () => { k = 1; tx = 0; ty = 0; } }); });
   const zoomBtn = (f) => { const r = vp.getBoundingClientRect(); zoomAt(f, r.width / 2, r.height / 2); };
 
   // ---- arranging ------------------------------------------------------------------------------------
@@ -218,7 +236,7 @@
 {/if}
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="vp" bind:this={vp} onwheel={wheel} onpointerdown={down} class:arranging class:zoomed={k > 1}>
+<div class="vp" bind:this={vp} onpointerdown={down} class:arranging class:zoomed={k > 1}>
   <div class="stage" bind:this={stage} class:sketch style:aspect-ratio={aspect} style:transform={`translate(${tx}px, ${ty}px) scale(${k})`}>
     {#if url}
       <img src={url} alt="Map of {frame.title}" draggable="false" onload={(ev) => (aspect = ev.currentTarget.naturalWidth / ev.currentTarget.naturalHeight)} />

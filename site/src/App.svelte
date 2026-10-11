@@ -7,6 +7,7 @@
   import { saveLocal, loadLocal, listLocal } from './lib/localWorlds.js';
   import { copy } from './lib/obsidian.js';
   import { T } from './lib/strings.js';
+  import { zoomKey } from './lib/zoomKeys.js';
   import Chooser from './views/Chooser.svelte';
   import Home from './views/Home.svelte';
   import Timeline from './views/Timeline.svelte';
@@ -100,6 +101,7 @@
     if (ev.key === 'Escape') { store.searchOpen = false; store.coverageOpen = false; return; }
     if (store.tourOpen) return;
     if (typing || store.searchOpen || ev.target.closest?.('[role="slider"]')) return;
+    if (zoomKey(ev)) { ev.preventDefault(); return; }
     if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { ev.preventDefault(); ev.shiftKey ? store.moveStory(ev.key === 'ArrowRight' ? 1 : -1) : store.move(ev.key === 'ArrowRight' ? 1 : -1); }
   }
 

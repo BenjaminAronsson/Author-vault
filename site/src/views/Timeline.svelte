@@ -1,4 +1,5 @@
 <script>
+  import PanZoom from '../components/PanZoom.svelte';
   // Saga → book → chapter. The saga view shows books as blocks; click one to see its chapters.
   import { store } from '../lib/store.svelte.js';
   import EntityLink from '../components/EntityLink.svelte';
@@ -87,6 +88,7 @@
     <div class="card"><Storylines /></div>
   {:else}
   <div class="scroll card" bind:clientWidth={cw}>
+    <PanZoom>
     <svg {width} {height} role="img" aria-label="Timeline">
       <defs>
         <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--card)" /><line x1="0" y1="0" x2="0" y2="6" stroke="var(--exp)" stroke-width="2" opacity=".45" /></pattern>
@@ -153,6 +155,7 @@
       <line x1={bookX} x2={bookX} y1="6" y2={height - 6} class="bookline" />
       <text x={bookX} y="16" text-anchor="middle" class="here">you are here</text>
     </svg>
+    </PanZoom>
     {#if threads.length > 12}<button class="link small" onclick={() => (showAllThreads = !showAllThreads)}>{showAllThreads ? 'Show fewer threads' : `Show all ${threads.length} threads`}</button>{/if}
   </div>
 

@@ -1,5 +1,6 @@
 <script>
   import { store } from '../lib/store.svelte.js';
+  import PanZoom from './PanZoom.svelte';
   import { relationsAt, stableLayout, localLayout, colorOf, describe, kinKind, KIN_KINDS } from '../lib/relations.js';
   import { PosTween } from '../lib/motion.svelte.js';
   import { untrack } from 'svelte';
@@ -103,6 +104,7 @@
 </script>
 
 <figure class="web" style:height={`${height}px`}>
+  <PanZoom fill>
   <svg viewBox={box} role="img" aria-label="Relationship web">
     <defs>
       {#each nodes as n (n.id)}<clipPath id={`c-${n.id.replace(/\W/g, '_')}`}><circle cx={n.x} cy={n.y} r={rad(n.id)} /></clipPath>{/each}
@@ -150,6 +152,7 @@
       {/each}
     </g>
   </svg>
+  </PanZoom>
   {#if !nodes.length}<p class="muted empty">No characters known at this point yet.</p>{/if}
   {#if hiddenCount > 0}<p class="more small muted">Showing {nodes.length} most present{win ? ` in the last ${win} chapters` : ''} · {hiddenCount} more hidden</p>{/if}
 </figure>

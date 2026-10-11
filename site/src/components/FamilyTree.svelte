@@ -5,6 +5,7 @@
   import { kinIndex, familyTree, lifespan, kinDetail } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
   import Avatar from './Avatar.svelte';
+  import PanZoom from './PanZoom.svelte';
 
   let { focus, up = 2, down = 2, onpick = (id) => store.open(id), compact = false } = $props();
   const idx = $derived((store.version, kinIndex(store.model)));
@@ -35,7 +36,8 @@
   const genLabel = (g) => ({ '-2': 'Grandparents', '-1': 'Parents', 0: '', 1: 'Children', 2: 'Grandchildren' })[g] ?? (g < 0 ? `${-g} generations up` : `${g} generations down`);
 </script>
 
-<div class="ft" class:compact style:min-height={`${height}px`}>
+<div class="ft" class:compact>
+  <PanZoom height={Math.min(height + 8, compact ? 360 : 640)}>
   <div class="canvas" style:width={`${width}px`} style:height={`${height}px`}>
     <svg width={width} height={height} aria-hidden="true">
       {#each tree.edges as e (e.from + e.to)}
@@ -70,6 +72,7 @@
       {/each}
     {/each}
   </div>
+  </PanZoom>
   {#if !compact}
     <div class="legend small muted" aria-label="Legend">
       <span><svg class="lg" width="20" height="20" viewBox="-10 -10 20 20" aria-hidden="true"><circle r="9" class="o" /><circle class="rg" cx="-2.6" r="4" /><circle class="rg" cx="2.6" r="4" /></svg> gifta</span><span><b class="bl">A</b> adoptiv</span><span><b class="bl">F</b> foster</span><span><b class="bl">S</b> styv</span>
@@ -80,9 +83,9 @@
 </div>
 
 <style>
-  .ft { overflow: auto; position: relative; }
+  .ft { position: relative; }
   .canvas { position: relative; margin: 0 auto; }
-  svg { position: absolute; inset: 0; pointer-events: none; }
+  .canvas > svg { position: absolute; inset: 0; pointer-events: none; }
   .ring, .badge { pointer-events: all; cursor: help; }
   path { fill: none; stroke: var(--ink-3); stroke-width: 1.5; opacity: .7; }
   .sp { stroke: var(--accent); stroke-width: 2; }
