@@ -68,3 +68,21 @@ export function localLayout(worldKey, ids, pairs) {
   warm.set(worldKey, { ...prev, ...pos });
   return pos;
 }
+
+// Genealogy: lines are kinds of tie, not feelings. "kin · far" / "kin · make/maka" / "hushåll · piga" (written by apply).
+export const KIN_KINDS = {
+  parent: { label: 'parent / child', color: '#8a6a45' },
+  spouse: { label: 'married', color: 'var(--accent)' },
+  sibling: { label: 'siblings', color: '#4f7a8c' },
+  household: { label: 'same household', color: '#8c8a5a', dash: '5 4' },
+};
+/** 'parent' | 'spouse' | 'sibling' | 'household' | null (a feeling) for a relation's bond text. */
+export function kinKind(bond) {
+  const b = String(bond ?? '').toLowerCase();
+  if (b.startsWith('hushåll')) return 'household';
+  if (!b.startsWith('kin')) return null;
+  if (/make|maka|hustru|\bman\b|gift/.test(b)) return 'spouse';
+  if (/syskon|bror|syster/.test(b)) return 'sibling';
+  if (/far|mor|förälder|barn|son|dotter|parent|child/.test(b)) return 'parent';
+  return 'parent';
+}

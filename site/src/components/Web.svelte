@@ -1,6 +1,6 @@
 <script>
   import { store } from '../lib/store.svelte.js';
-  import { relationsAt, stableLayout, localLayout, colorOf, describe } from '../lib/relations.js';
+  import { relationsAt, stableLayout, localLayout, colorOf, describe, kinKind, KIN_KINDS } from '../lib/relations.js';
   import { PosTween } from '../lib/motion.svelte.js';
   import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
@@ -96,6 +96,9 @@
   const dash = (r) => (!r ? '1 5' : r.n < 0 ? '7 5' : null);
   const width = (r) => (!r ? 1.2 : 1.6 + Math.abs(r.n) * 1.3);
   const img = (id) => store.imageFor(id);
+  // genealogy: a pair joined by kinship is one line in the colour of its kind (feelings from letters keep the warm/cold halves)
+  const gen = $derived(!!store.model.genealogy);
+  const kindOf = (e) => (gen ? kinKind(e.ab?.bond) ?? kinKind(e.ba?.bond) : null);
   const dead = (id) => /dead/.test(store.snap?.status[id] ?? '');
 </script>
 
@@ -108,7 +111,15 @@
       {#each edges as e (e.a + e.b)}
         {@const A = T(e.a)} {@const B = T(e.b)} {@const mx = (A.x + B.x) / 2} {@const my = (A.y + B.y) / 2}
         <g in:fade={{ duration: 350 }} class:table={(e.ab?.src ?? e.ba?.src) === 'table'} class:side={radial && e.a !== focus && e.b !== focus}>
-          {#if !e.ab && !e.ba}
+          {#if kindOf(e)}
+            {@const k = kindOf(e)}
+            <line x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke={KIN_KINDS[k].color} stroke-width="2.6" stroke-dasharray={KIN_KINDS[k].dash ?? null}><title>{store.name(e.a)} – {store.name(e.b)}: {[e.ab?.bond, e.ba?.bond].filter(Boolean).map((b) => b.replace(/^(kin|hushåll) · /, '')).join(' / ')}</title></line>
+            {#if k === 'spouse'}
+              <g transform={`translate(${mx},${my})`} class="kinmark"><circle r="9" fill="var(--card)" stroke={KIN_KINDS.spouse.color} stroke-width="1.5" /><circle cx="-2.6" r="4" fill="none" stroke={KIN_KINDS.spouse.color} stroke-width="1.6" /><circle cx="2.6" r="4" fill="none" stroke={KIN_KINDS.spouse.color} stroke-width="1.6" /></g>
+            {/if}
+          {:else if gen && !e.ab && !e.ba}
+            <!-- genealogy: appearing on the same date says nothing -->
+          {:else if !e.ab && !e.ba}
             <line x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke="var(--rule)" stroke-width={Math.min(4, 0.8 + e.co * 0.5)}><title>{store.name(e.a)} & {store.name(e.b)} appear together in {e.co} chapter(s)</title></line>
           {:else}
             <line x1={A.x} y1={A.y} x2={mx} y2={my} stroke={colorOf(e.ab?.n)} stroke-width={width(e.ab)} stroke-dasharray={dash(e.ab)} class:inf={e.ab?.inferred}><title>{e.ab ? describe(store, e.ab) : `${store.name(e.a)} → ${store.name(e.b)}: unknown`}</title></line>

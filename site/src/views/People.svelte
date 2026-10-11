@@ -4,7 +4,19 @@
   import Web from '../components/Web.svelte';
   import Avatar from '../components/Avatar.svelte';
   import EntityLink from '../components/EntityLink.svelte';
-  import { relationsAt, colorOf, describe } from '../lib/relations.js';
+  import { relationsAt, colorOf, describe, KIN_KINDS } from '../lib/relations.js';
+  import { kinIndex, lifespan } from '../lib/kin.js';
+  import { parseDate } from '../lib/dates.js';
+
+  // genealogy: people are compared by life and family, not by who they like
+  const gen = $derived(!!store.model.genealogy);
+  const kidx = $derived(gen ? (store.version, kinIndex(store.model)) : null);
+  const fam = (id, k) => [...(kidx?.[k].get(id) ?? [])].filter((x) => store.visible(x));
+  const now = $derived(store.chapter?.date ?? null);
+  const born = (c) => parseDate(c.born);
+  const diedBy = (c) => { const d = parseDate(c.died); return d && now && d.sort <= now.sort ? d : null; };
+  const age = (c) => { const b = born(c); if (!b || !now || now.sort < b.sort) return null; const end = diedBy(c) ?? now; return Math.floor((end.sort - b.sort) / 10000); };
+  const sources = (c) => (Array.isArray(c.fm.sources) ? c.fm.sources.length : 0);
 
   let mode = $state('ego');
   let as = $state('graph');
@@ -19,7 +31,7 @@
   const bonds = (id) => Object.values(rel.directed).filter((r) => r.from === id).sort((a, b) => b.n - a.n);
   let sortKey = $state('appear');
   let q = $state('');
-  const rows = $derived([...chars].filter((c) => !q || [c.title, ...c.aliases].some((n) => n.toLowerCase().includes(q.toLowerCase()))).sort((a, b) => sortKey === 'name' ? a.title.localeCompare(b.title) : (store.intro[a.id] ?? 0) - (store.intro[b.id] ?? 0)));
+  const rows = $derived([...chars].filter((c) => !q || [c.title, ...c.aliases].some((n) => n.toLowerCase().includes(q.toLowerCase()))).sort((a, b) => sortKey === 'name' ? a.title.localeCompare(b.title, 'sv') : sortKey === 'born' ? (born(a)?.sort ?? Infinity) - (born(b)?.sort ?? Infinity) : (store.intro[a.id] ?? 0) - (store.intro[b.id] ?? 0)));
 </script>
 
 <div class="people">
@@ -46,12 +58,19 @@
         <label class="small">Hops <select bind:value={hops}><option value={1}>1</option><option value={2}>2</option></select></label>
       {/if}
     {/if}
+    {#if gen && as === 'graph'}
+      <span class="legend small muted">
+        {#each Object.entries(KIN_KINDS) as [k, v] (k)}<span class="sw" class:dash={v.dash} style:background={v.dash ? null : v.color} style:border-color={v.color}></span> {v.label}{/each}
+        · <span class="sw" style:background="var(--pos)"></span> warm / <span class="sw dash" style:border-color="var(--neg)"></span> cold = feelings in letters and memoirs
+      </span>
+    {:else if !gen}
     <span class="legend small muted">
       <span class="sw" style:background="var(--pos)"></span> warm
       <span class="sw dash" style:border-color="var(--neg)"></span> cold
       <span class="sw" style:background="var(--neu)"></span> neutral
       · each half of a line is one side's feeling · faded = from Relations table · grey = appear together
     </span>
+    {/if}
   </div>
 
   {#if as === 'graph'}
@@ -60,6 +79,31 @@
   {:else}
     <div class="card">
       <input class="filter" placeholder="Filter by name…" bind:value={q} aria-label="Filter characters" />
+{#if gen}
+      <table>
+        <thead><tr>
+          <th></th>
+          <th><button class="link" onclick={() => (sortKey = 'name')}>Name</button></th>
+          <th><button class="link" onclick={() => (sortKey = 'born')}>Lived</button></th>
+          <th>Age</th><th>Now at</th><th>Parents</th><th>Married to</th><th>Children</th><th title="Sources that mention them">Sources</th>
+        </tr></thead>
+        <tbody>
+          {#each rows as c (c.id)}
+            <tr class:future={store.isFuture(c.id)} class:dead={!!diedBy(c)}>
+              <td><Avatar id={c.id} size={32} /></td>
+              <td><EntityLink id={c.id} label={c.title.replace(/\s*\([^)]*\)\s*$/, '')} />{#if c.living} <span class="chip">living</span>{/if}</td>
+              <td class="small num">{lifespan(c) || '—'}{diedBy(c) ? ' †' : ''}</td>
+              <td class="small num">{age(c) ?? '—'}</td>
+              <td class="small">{#if store.snap?.presence[c.id] && !diedBy(c)}<EntityLink id={store.snap.presence[c.id].place} />{:else}—{/if}</td>
+              {#each ['parents', 'spouses', 'children'] as k (k)}
+                <td class="small">{#each fam(c.id, k) as x, i (x)}{#if i}{', '}{/if}<EntityLink id={x} label={store.name(x).replace(/\s*\([^)]*\)\s*$/, '')} />{:else}—{/each}</td>
+              {/each}
+              <td class="small num">{sources(c)}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+      {:else}
       <table>
         <thead><tr>
           <th></th>
@@ -82,6 +126,7 @@
           {/each}
         </tbody>
       </table>
+      {/if}
     </div>
   {/if}
 </div>
@@ -102,5 +147,7 @@
   .filter { font: inherit; padding: .35rem .6rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); margin-bottom: .5rem; width: min(320px, 100%); }
   thead th { position: sticky; top: 0; background: var(--card); }
   th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  tr.dead td { color: var(--ink-3); }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
   th { font: 600 .72rem var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }
 </style>
