@@ -21,8 +21,8 @@ Severity:
 | 1.8 | The time bar overflowed at 390 px ("Follow…" was cut off). | Med | Fixed: labels and captions hidden, finger-sized ◀ ▶ |
 | 1.9 | The timeline used fixed 130 px lanes and a 30 px minimum column. | Low | Fixed: 86 px and 24 px under 600 px wide |
 | 1.10 | Heading sizes were fixed, and wide tables pushed the page. | Low | Fixed: `clamp()` headings, tables scroll sideways |
-| 1.11 | WorldMap duplicates PanZoom's gesture code. | Low | Open: it got the same touch fix, but should reuse PanZoom |
-| 1.12 | On phones the Timeline could open the list (TimelineList) by default instead of the chart. | Low | Open |
+| 1.11 | WorldMap duplicated PanZoom's gesture code. | Low | Fixed: the map uses PanZoom (touch, full screen, keys). Pins dragged in Arrange mode are left to the map. |
+| 1.12 | The Timeline chart is too wide for phones. | Low | Fixed: a **List** mode (every step, with summary, cast and who's talked about), the default on phones |
 
 ## 2. Present vs. talked about
 
@@ -32,7 +32,7 @@ Severity:
 | 2.2 | Every timeline line counted the person as on stage, and an `at:` moved them there. | High | Fixed: `presence:mentioned` / `presence:remembered` keeps them off stage and leaves their whereabouts alone |
 | 2.3 | Nothing in the UI showed who was talked about. | Med | Fixed: a "Talked about" list on Home and Reader, and "talked about:" on Timeline cards (italic, muted) |
 | 2.4 | Agents had no rule for this. | High | Fixed: chronicler, character-psychologist and genealogist each have a rule with an example |
-| 2.5 | Existing worlds still list mentioned people as present. | Med | Open: a re-extract fixes them. A lint hint ("in `characters:` but no timeline line here") would help find them. |
+| 2.5 | Existing worlds still list mentioned people as present. | Med | Fixed: lint `maybe-mentioned` flags cast members with no timeline line in that chapter, and the continuity-keeper checks the text and moves them to `mentioned:` |
 
 ## 3. Images
 
@@ -44,7 +44,7 @@ Severity:
 | 3.4 | `gallery:` was parsed but never shown. | Med | Fixed: the Photos section on person and entity pages, a strip in the quick card, photos on their date step, and a lightbox |
 | 3.5 | Images were matched by file name only, so two `portrait.webp` files collided. | Med | Fixed: matched by path first |
 | 3.6 | Performance. | — | Thumbnails (640 px) load lazily, and the 1600 px version loads only in the lightbox |
-| 3.7 | Tagging people inside the viewer (click a face to add a region, drag-drop a photo to make a Media note) | Med | Open: regions are displayed but have to be written in the note |
+| 3.7 | Tagging people inside the viewer | Med | Fixed: **🏷 Tag people** in the lightbox (drag a box over a face, pick who; × removes). **＋ Add photo** on person, place and event pages in folder mode: compressed in the browser (WebP, 2000 px) into a Media note. Without a folder, tags wait in the browser like map pins. |
 
 ## 4. Family tree
 
@@ -55,9 +55,9 @@ Severity:
 | 4.3 | Siblings were never drawn. | Med | Fixed: shown beside the person in the Tree style |
 | 4.4 | There was only one layout. | Med | Fixed: **Tree / Descendants / Ancestors** (a left-to-right pedigree). The choice is remembered. |
 | 4.5 | The tree height was `window − 330`, a guess. | Low | Fixed: measured down to the time bar |
-| 4.6 | A fan chart for deep pedigrees, and collapsing branches | Low | Open |
+| 4.6 | Deep pedigrees and big families | Low | Fixed: a **Fan** style (ancestors as rings, father's side left), and fold buttons (▴ ▾) on anyone away from the focus to tuck their branch away (+n brings it back) |
 | 4.7 | Tests | — | `test/familyLayout.test.js`, with every Norrgården person as focus: no overlaps, couples over their children, no interleaving |
 
 ## Other notes
-- The first load of a world, and switching worlds, can block the page for several seconds. The browser tooling timed out more than once. Worth profiling (the parse worker and the snapshot build).
-- The tour opens on every fresh device, including deep links like `#view=family`. It could skip itself when the URL points somewhere specific.
+- **Load time** (measured): Norrgården parses in 22 ms, and a generated 192-chapter world in 32 ms plus 17 ms for snapshots. The production build loads in 0.66 s, and a headless CPU profile of opening the Timeline shows about 0.1 s of work. The freezes seen during this review came from the browser automation: the tab was in the background, where Chrome pauses rendering. They weren't caused by the app. Nothing to fix.
+- The tour opened on every fresh device, including deep links like `#view=family`. Fixed: it only opens when you arrive at a world, not when you follow a link into it.
