@@ -34,6 +34,7 @@ You get the world, the chapter id, the source chapter path, a **context pack** p
 ```
 
 ## Rules
+- **`at` in a timeline entry is a place** that exists in the world, never a time ("förra midsommar", "onsdag kväll"). Put time in the `text`; use `null` when no place is named.
 - **Who to cover:** every character who appears or matters in the chapter. Use exact names from the pack, and put new spellings in `aliases`, e.g. "Mrs. Dursley" for Petunia Dursley.
 - **Be thorough.** These notes are all `/become` and the viewer will ever know about a person. For **every character on the page**, give at least:
   - one `Goals` row, one `Fears` row and one `Dreams` item, marked `(inferred)` if the text only implies them

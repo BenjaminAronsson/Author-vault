@@ -73,7 +73,8 @@ export function contextPack(model, { cid, sourcePath, sourceText, forWho = 'char
 
 export function chapterSource(worldDir, story, cid) {
   const num = /-(C\d+)$/.exec(cid)?.[1];
-  const p = join(worldDir, '_sources', story, `${num}.md`);
-  return existsSync(p) ? { path: p, text: readFileSync(p, 'utf8') } : null;
+  // book chapters live in _sources/<story>/; expansion stories keep their prose in Stories/<story>/Text/
+  const p = [join(worldDir, '_sources', story, `${num}.md`), join(worldDir, 'Stories', story, 'Text', `${num}.md`)].find(existsSync) ?? '';
+  return p && existsSync(p) ? { path: p, text: readFileSync(p, 'utf8') } : null;
 }
 export { chapterRef };

@@ -70,6 +70,7 @@ if (cmd === 'plan') {
   const r = applyPatch(world, patch, { cid, story, canon, source: canon === 'book' ? src?.text ?? null : null });
   console.log(`✓ ${cid}: ${r.created.length} created, ${r.updated.length} updated${r.rejectedQuotes.length ? `, ${r.rejectedQuotes.length} quote(s) rejected (not verbatim)` : ''}`);
   for (const q of r.rejectedQuotes) console.log(`  ✗ ${q.where} · ${q.who}: "${String(q.text).slice(0, 80)}"`);
+  for (const w of r.warnings ?? []) console.log(`  ! ${w}`);
   for (const x of r.warnings) console.log(`  ! ${x}`);
 } else if (cmd === 'lint') {
   const { readWorld } = await lib('vault/apply.js');

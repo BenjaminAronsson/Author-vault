@@ -35,6 +35,7 @@ You get the world, the chapter id (e.g. `B1-C03`), the source chapter path, a **
 
 ## Rules
 - **Names:** use exactly the names in the context pack. Put new spellings in `aliases`.
+- **`at` is a place**, a location that exists in the world, never a time ("förra midsommar", "onsdag kväll", "on the third night"). Put time in the `text`. Use `null` when the place isn't named.
 - **New entities:** create one only for what the chapter **names** (types: location, faction, item, concept, creature, event, religion, magic, technology, plot).
 - **Events:** one per distinct happening that changes a state, a relationship or what someone knows. A typical chapter has 4–8, so don't merge separate happenings into one. Use `paragraphs` with sections `What happened (objective)`, `Causes`, `Consequences`, `Versions told`.
 - **Places, factions, things:** sections `Description` (use the book's imagery and sensory detail), `Atmosphere`, `Who is here`, `History`, `Secrets`, `How it works`, `Limits & costs`, `Daily life`.

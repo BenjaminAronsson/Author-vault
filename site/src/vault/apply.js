@@ -71,6 +71,8 @@ export class World {
     let text = stripPlaceholders(this.template(type).replace(/\{\{World\}\}/g, this.name).replace(/\{\{(Name|Event|Era|Language|Culture|Religion|Creature|Magic|Technology|Plot|Thread)\}\}/g, n));
     text = setRaw(text, 'canon', canon);
     if (cid) { text = setField(text, 'first_seen', link(cid)); text = setRaw(text, 'sources', `[${JSON.stringify(link(cid))}]`); }
+    // an event happens in the chapter that introduces it (the template's `when` is only an example)
+    if (type === 'event' && cid) text = setRaw(text, 'when', cid.replace(/-(C\d+)$/, '/$1'));
     if (aliases.length) text = setRaw(text, 'aliases', `[${aliases.map((a) => JSON.stringify(a)).join(', ')}]`);
     for (const [k, v] of Object.entries(fields)) text = typeof v === 'string' ? setField(text, k, v) : setRaw(text, k, JSON.stringify(v));
     this.write(rel, text);
@@ -128,6 +130,9 @@ export function timelineLine(cid, t) {
  * patch = { chapter?, entities?, timeline?, rows?, items?, paragraphs?, quotes?, memories?, perspectives?, glossary? }
  * opts = { cid: 'B1-C03', story: 'B1', canon: 'book'|'expansion', source: <chapter text for quote checks> }
  */
+/** Words that make an `at:` value a time of day/week/year rather than a place. */
+const TIME_AT = /(?<![\p{L}])(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag|morgon|morgonen|förmiddag|eftermiddag|kväll|kvällen|natt|natten|midnatt|midsommar|midsommarnatten|dagen|veckan|året|sommaren|vintern|hösten|våren|januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|morning|afternoon|evening|night|midnight|midsummer|yesterday|today|tomorrow)(?![\p{L}])/iu;
+
 export function applyPatch(world, patch, opts) {
   const { cid, story, canon = 'book', source = null } = opts;
   const report = { created: [], updated: [], rejectedQuotes: [], warnings: [] };
@@ -136,6 +141,10 @@ export function applyPatch(world, patch, opts) {
   const guessType = (name, fallback = 'character') => typeOf[String(name).toLowerCase()] ?? (world.find(name) ? null : fallback);
   const ent = (name, fallbackType = 'character') => world.ensure(name, guessType(name, fallbackType) ?? fallbackType, { cid, canon });
   const verbatim = (text) => !source || quoteNorm(source).includes(quoteNorm(text).replace(/^"|"$/g, ''));
+  // `at` is a place, never a time ("förra midsommar", "onsdag kväll"): drop time expressions so they don't become Location notes
+  for (const t of patch.timeline ?? []) {
+    if (t.at && TIME_AT.test(t.at) && !world.find(t.at)) { report.warnings.push(`timeline at "${t.at}" looks like a time, not a place: dropped (put it in the text)`); t.at = null; }
+  }
 
   // entities first (types, aliases, fields)
   for (const e of patch.entities ?? []) {

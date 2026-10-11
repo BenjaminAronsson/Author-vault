@@ -8,7 +8,8 @@ import { splitFrontmatter } from '../parser/markdown.js';
 export const COST = { perSourceToken: 3, fixed: 75000 };
 
 export function plan(worldDir, story, range = 'next') {
-  const src = join(worldDir, '_sources', story);
+  // book chapters live in _sources/<story>/; expansion stories keep their prose in Stories/<story>/Text/
+  const src = [join(worldDir, '_sources', story), join(worldDir, 'Stories', story, 'Text')].find((d) => existsSync(d) && readdirSync(d).some((f) => /^C\d+\.md$/.test(f))) ?? join(worldDir, '_sources', story);
   if (!existsSync(src)) throw new Error(`No sources for ${story} (expected ${src})`);
   const all = readdirSync(src).filter((f) => /^C\d+\.md$/.test(f)).sort();
   const storyNote = join(worldDir, 'Stories', story, 'Story.md');
