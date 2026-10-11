@@ -5,7 +5,7 @@
   import Avatar from './Avatar.svelte';
   import EntityLink from './EntityLink.svelte';
   import Markdown from './Markdown.svelte';
-  import { kinIndex, lifespan } from '../lib/kin.js';
+  import { kinIndex, lifespan, lifeLine, ageAt, ageLabel } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
   import { relationsAt } from '../lib/relations.js';
   import { stepArg, copy } from '../lib/obsidian.js';
@@ -21,8 +21,8 @@
 
   const now = $derived(store.chapter?.date ?? null);
   const died = $derived.by(() => { if (!e) return null; const d = parseDate(e.died); return d && now && d.sort <= now.sort ? e.died : /dead/.test(store.snap?.status[e.id] ?? '') ? '†' : null; });
-  const age = $derived.by(() => { const b = parseDate(e?.born); if (!b || !now || now.sort < b.sort) return null; const d = parseDate(e.died); const end = d && d.sort <= now.sort ? d : now; return Math.floor((end.sort - b.sort) / 10000); });
-  const place = $derived(e && !died ? store.snap?.presence[e.id]?.place ?? null : null);
+  const life = $derived(e ? ageAt(e, now) : null);
+  const place = $derived(e && !died && !(life?.deathUnknown) ? store.snap?.presence[e.id]?.place ?? null : null);
   const kidx = $derived(gen && person ? kinIndex(store.model) : null);
   const fam = (k) => [...(kidx?.[k].get(e.id) ?? [])].filter((x) => store.visible(x));
   const rel = $derived(person && !gen ? relationsAt(store) : null);
@@ -64,7 +64,7 @@
       <div class="who">
         <div class="label">{person ? (gen ? 'Person' : 'Character') : e.type}{#if e.canon === 'expansion'} · <span class="exp-mark">EXP</span>{/if}</div>
         <div class="nm">{e.title}{#if died} <span class="muted">†</span>{/if}</div>
-        {#if gen && person && lifespan(e)}<div class="small muted">{lifespan(e)}{#if e.living} · living{/if}</div>{/if}
+        {#if gen && person && lifespan(e)}<div class="small muted">{lifeLine(e)}{#if e.living} · living{/if}</div>{/if}
         {#if aliases.length}<div class="small muted">also {aliases.slice(0, 3).join(', ')}</div>{/if}
       </div>
     </div>
@@ -75,7 +75,7 @@
       <dl>
         {#if person}
           <dt>At {store.chapter?.id}</dt>
-          <dd>{#if died}died {died !== '†' ? died : ''}{:else if age !== null}{age} years{#if place}{' · '}<EntityLink id={place} />{/if}{:else if place}<EntityLink id={place} />{:else}<span class="muted">—</span>{/if}</dd>
+          <dd>{#if died}died {died !== '†' ? died : ''}{#if life?.age !== null}, {ageLabel({ ...life, atDeath: false })} years old{/if}{:else if life?.deathUnknown}<span class="muted">death not recorded</span>{:else if life?.age !== null}{ageLabel(life)} years{#if place}{' · '}<EntityLink id={place} />{/if}{:else if place}<EntityLink id={place} />{:else}<span class="muted">—</span>{/if}</dd>
           {#if gen}
             {#each [['parents', 'Parents'], ['spouses', 'Married to'], ['children', 'Children'], ['siblings', 'Siblings']] as [k, h] (k)}
               {#if fam(k).length}<dt>{h}</dt><dd>{#each fam(k) as x, i (x)}{#if i}{', '}{/if}<EntityLink id={x} label={store.name(x).replace(/\s*\([^)]*\)\s*$/, '')} />{/each}</dd>{/if}

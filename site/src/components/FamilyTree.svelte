@@ -2,7 +2,7 @@
   // Ancestors above, the person and their spouses in the middle, descendants below. People appear when they are
   // born at the bookmark and turn grey when they have died; living people stay hidden unless shown.
   import { store } from '../lib/store.svelte.js';
-  import { kinIndex, familyTree, lifespan, kinDetail } from '../lib/kin.js';
+  import { kinIndex, familyTree, lifespan, lifeLine, kinDetail } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
   import Avatar from './Avatar.svelte';
   import PanZoom from './PanZoom.svelte';
@@ -69,7 +69,7 @@
           style:left={`${pos[id].x}px`} style:top={`${pos[id].y}px`} style:width={`${W}px`} style:height={`${H}px`}
           onclick={() => onpick(id)} title={`${e.title}${e.aliases.length ? ` (${e.aliases.join(', ')})` : ''}`}>
           <Avatar {id} size={compact ? 30 : 38} />
-          <span class="txt"><span class="n">{e.title.replace(/\s*\([^)]*\)\s*$/, '')}</span><span class="y">{lifespan(e)}{dead(id) ? ' †' : ''}</span></span>
+          <span class="txt"><span class="n">{e.title.replace(/\s*\([^)]*\)\s*$/, '')}</span><span class="y">{lifeLine(e)}{dead(id) ? ' †' : ''}</span></span>
         </button>
       {/each}
     {/each}

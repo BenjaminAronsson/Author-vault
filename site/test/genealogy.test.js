@@ -149,7 +149,7 @@ describe('the clock is in-world time', () => {
     expect(b).toContain('Inflyttad från Godegård');
     expect(b).not.toContain('Utflyttad till Motala');
     expect(b).toContain('- where: Norrgården');
-    expect(b).toContain('- age: about 22 (uncertain birth date)');
+    expect(b).toContain('- age: about 22 (uncertain dates)');
     const a = briefing(model(), 'Anna Persdotter', { at: '1850-01-01' });
     expect(a).toContain('# Briefing: Anna Persdotter (1843–1910) at 1845');
     expect(a).toContain('- Parents: Per Andersson (1812–1867)');
@@ -311,5 +311,23 @@ describe('GEDCOM export', () => {
     expect(g).toMatch(/0 @S1@ SOUR\n1 TITL Husförhör Kila 1840–1845\n1 PUBL Kila AI:12/);
     expect(g).toMatch(/1 SEX F\n1 FAMC/);
     expect(toGedcom(model(), { includeLiving: true })).toMatch(/Greta/);
+  });
+});
+
+describe('ages', () => {
+  it('shows the age reached for the dead, and no silly ages without a death', async () => {
+    const { ageAt, ageLabel, lifeLine } = await import('../src/lib/kin.js');
+    const { parseDate } = await import('../src/lib/dates.js');
+    const at = (d) => parseDate(d);
+    const per = { born: '1812-06-24', died: '1867-11-02' };
+    expect(ageLabel(ageAt(per, at('1850')))).toBe('ca 37'); // year-only bookmark
+    expect(ageLabel(ageAt(per, at('1952')))).toBe('55 at death');
+    expect(ageLabel(ageAt(per, at('1952')), { short: true })).toBe('55 †');
+    expect(lifeLine(per)).toBe('1812–1867 (55)');
+    const brita = { born: '1822' };
+    expect(ageLabel(ageAt(brita, at('1868')))).toBe('ca 46');
+    expect(ageAt(brita, at('1952'))).toMatchObject({ age: null, deathUnknown: true });
+    expect(ageLabel(ageAt(brita, at('1952')))).toBe('death not recorded');
+    expect(ageAt({ born: '1900', living: true }, at('2020')).age).toBe(120); // living: shown as is
   });
 });

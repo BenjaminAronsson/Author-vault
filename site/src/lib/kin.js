@@ -76,3 +76,42 @@ export function kinDetail(model, a, b) {
   const from = /från ([^,)(]+?)(?:,| till| på| \(|$)/.exec(text)?.[1]?.trim() ?? null;
   return { type, confidence, from };
 }
+
+/** Oldest age we show for someone with no recorded death; beyond it they are simply "death not recorded". */
+export const MAX_AGE = 105;
+/**
+ * A person's age as of a date (parsed), the way genealogists read it:
+ * → { age, dead, atDeath, deathUnknown, approx }
+ *   dead + atDeath: died on or before the date, age = how old they became
+ *   deathUnknown: no death recorded and they'd be implausibly old — age is null
+ */
+export function ageAt(e, now) {
+  const b = parseDate(e?.born), d = parseDate(e?.died);
+  const approx = !!b && (b.qual !== 'exact' || b.precision !== 'day');
+  if (d && now && d.sort <= now.sort) {
+    const age = b ? Math.floor((d.sort - b.sort) / 10000) : null;
+    return { age: age !== null && age >= 0 ? age : null, dead: true, atDeath: true, deathUnknown: false, approx: approx || (!!d && d.qual !== 'exact') };
+  }
+  if (!b || !now || now.sort < b.sort) return { age: null, dead: false, atDeath: false, deathUnknown: false, approx };
+  const age = Math.floor((now.sort - b.sort) / 10000);
+  const fuzzy = approx || now.qual !== 'exact' || now.precision !== 'day'; // a bookmark at "1850" can't give an exact age
+  if (age > MAX_AGE && !e.living) return { age: null, dead: false, atDeath: false, deathUnknown: true, approx };
+  return { age, dead: false, atDeath: false, deathUnknown: false, approx: fuzzy };
+}
+
+/** "55", "ca 55", "55 at death", "death not recorded", or "" */
+export function ageLabel(a, { short = false } = {}) {
+  if (a.deathUnknown) return short ? '—' : 'death not recorded';
+  if (a.age === null) return '';
+  const n = `${a.approx ? 'ca ' : ''}${a.age}`;
+  return a.atDeath ? (short ? `${n} †` : `${n} at death`) : n;
+}
+
+/** Life years with the age reached: "1812–1867 (55)", "f. 1843" */
+export function lifeLine(e) {
+  const span = lifespan(e);
+  const b = parseDate(e?.born), d = parseDate(e?.died);
+  if (!span || !b || !d) return span;
+  const age = Math.floor((d.sort - b.sort) / 10000);
+  return age >= 0 ? `${span} (${b.qual !== 'exact' || d.qual !== 'exact' || b.precision !== 'day' ? 'ca ' : ''}${age})` : span;
+}

@@ -8,7 +8,7 @@
   import Web from '../components/Web.svelte';
   import TimelineList from '../components/TimelineList.svelte';
   import FamilyTree from '../components/FamilyTree.svelte';
-  import { lifespan } from '../lib/kin.js';
+  import { lifespan, lifeLine, ageAt, ageLabel } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
   import { relationsAt, colorOf, describe } from '../lib/relations.js';
   import { sectionMarkdown, wikilinks } from '../parser/markdown.js';
@@ -19,7 +19,7 @@
   const ok = (cid) => store.stepVisible(cid);
   const fut = (cid) => store.stepIsFuture(cid);
   const status = $derived(store.snap?.status[id] ?? (store.intro[id] <= store.idx ? 'alive' : '—'));
-  const place = $derived(store.snap?.presence[id]?.place ?? null);
+  const place = $derived(life?.deathUnknown || life?.atDeath ? null : store.snap?.presence[id]?.place ?? null);
   const links = (v) => wikilinks(v).map((n) => store.model.nameIndex[n.toLowerCase()]).filter(Boolean);
   const chips = $derived([...links(e.fm.culture), ...links(e.fm.religion), ...links(e.fm.magic), ...links(e.fm.factions), ...links(e.fm.languages)]);
   const signature = $derived.by(() => {
@@ -55,7 +55,7 @@
   const marks = { achieved: '✓', abandoned: '✕', betrayed: '⚡', active: '●' };
   const accColor = { faithful: 'var(--pos)', partial: 'var(--neu)', distorted: 'var(--neg)', false: 'var(--neg)', unknown: 'var(--neu)' };
   const gen = $derived(!!store.model.genealogy);
-  const age = $derived.by(() => { const b = parseDate(e.born), n = store.chapter?.date; if (!b || !n || n.sort < b.sort) return null; const d = parseDate(e.died); const end = d && d.sort <= n.sort ? d : n; return Math.floor((end.sort - b.sort) / 10000); });
+  const life = $derived(ageAt(e, store.chapter?.date ?? null));
   const hasInner = $derived(goalHist.length || fears.length || dreams.length);
   const seqUpTo = $derived(store.sequence.slice(0, store.idx + 1));
   const gx = (cid) => (Math.max(0, seqUpTo.indexOf(cid)) / Math.max(1, seqUpTo.length - 1)) * 100;
@@ -67,7 +67,7 @@
     <div class="who">
       <div class="label">Character{#if e.canon === 'expansion'} · <span class="exp-mark">EXP</span> {e.origin ?? ''}{/if}</div>
       <h1>{e.title}{#if /dead/.test(status)} <span class="muted">†</span>{/if}</h1>
-      {#if gen && lifespan(e)}<div class="life">{lifespan(e)}{#if e.living} <span class="chip">living · private</span>{/if}</div>{/if}
+      {#if gen && lifespan(e)}<div class="life">{lifeLine(e)}{#if e.living} <span class="chip">living · private</span>{/if}</div>{/if}
       {#if e.aliases.length}<div class="muted small">also: {e.aliases.join(', ')}</div>{/if}
       <div class="chips">{#each chips as c (c)}<span class="chip"><EntityLink id={c} /></span>{/each}</div>
       {#if signature && ok(signature.source)}<p class="quote sig">“{signature.text}”</p>{/if}
@@ -84,7 +84,7 @@
       <div><div class="k">Where</div>{#if place}<EntityLink id={place} />{:else}<span class="muted">{T.unknown}</span>{/if}</div>
       <div><div class="k">Status</div>{status}</div>
       {#if gen}
-      <div><div class="k">Age</div>{#if age !== null}{age}{#if parseDate(e.born)?.qual !== 'exact' || parseDate(e.born)?.precision !== 'day'} <span class="small muted">(about)</span>{/if}{:else}<span class="muted">—</span>{/if}</div>
+      <div><div class="k">Age</div>{#if ageLabel(life)}{ageLabel(life)}{:else}<span class="muted">—</span>{/if}</div>
       <div><div class="k">Born</div>{e.born ?? '—'}</div>
       <div><div class="k">Died</div>{e.died && store.chapter?.date && parseDate(e.died)?.sort <= store.chapter.date.sort ? e.died : '—'}</div>
       {:else}

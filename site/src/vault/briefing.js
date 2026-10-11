@@ -2,6 +2,7 @@
 import { buildClock, buildSnapshots } from '../parser/derive.js';
 import { chapterRef } from '../parser/markdown.js';
 import { parseDate } from '../lib/dates.js';
+import { ageAt } from '../lib/kin.js';
 
 /** Genealogy: "--at 1880-06-01" → the last date step on or before that date (steps are dates as written). */
 function dateCut(model, seq, at) {
@@ -27,8 +28,9 @@ export function briefing(model, name, { at, cont = 'main' }) {
     `You know only what is below. Anything after ${cut} has not happened for you.`, ''];
   L.push('## Now', `- where: ${snap.presence[id] ? model.entities[snap.presence[id].place]?.title ?? snap.presence[id].place : 'unknown'}`, `- status: ${snap.status[id] ?? 'alive'}`);
   if (model.genealogy) {
-    const b = parseDate(e.born), now = parseDate(at) ?? model.chapters[cut]?.date;
-    if (b && now) L.push(`- age: about ${Math.max(0, Math.floor((now.sort - b.sort) / 10000))}${b.qual !== 'exact' || b.precision !== 'day' ? ' (uncertain birth date)' : ''}`);
+    const a = ageAt(e, parseDate(at) ?? model.chapters[cut]?.date ?? null);
+    if (a.age !== null) L.push(`- age: ${a.atDeath ? `died at about ${a.age}` : `about ${a.age}`}${a.approx ? ' (uncertain dates)' : ''}`);
+    else if (a.deathUnknown) L.push('- age: very old by now; no death recorded in the sources');
   }
   const pre = (e.preamble.match(/"(.+?)"/) ?? [])[1];
   if (pre) L.push(`- signature line: "${pre}"`);

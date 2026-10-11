@@ -3,7 +3,7 @@
   import { store } from '../lib/store.svelte.js';
   import FamilyTree from '../components/FamilyTree.svelte';
   import EntityLink from '../components/EntityLink.svelte';
-  import { lifespan } from '../lib/kin.js';
+  import { lifeLine as lifespan } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
 
   const people = $derived(Object.values(store.model.entities).filter((e) => e.type === 'character' && store.visible(e.id))

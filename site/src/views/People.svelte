@@ -5,7 +5,7 @@
   import Avatar from '../components/Avatar.svelte';
   import EntityLink from '../components/EntityLink.svelte';
   import { relationsAt, colorOf, describe, KIN_KINDS } from '../lib/relations.js';
-  import { kinIndex, lifespan } from '../lib/kin.js';
+  import { kinIndex, lifespan, lifeLine, ageAt, ageLabel } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
 
   // genealogy: people are compared by life and family, not by who they like
@@ -15,7 +15,7 @@
   const now = $derived(store.chapter?.date ?? null);
   const born = (c) => parseDate(c.born);
   const diedBy = (c) => { const d = parseDate(c.died); return d && now && d.sort <= now.sort ? d : null; };
-  const age = (c) => { const b = born(c); if (!b || !now || now.sort < b.sort) return null; const end = diedBy(c) ?? now; return Math.floor((end.sort - b.sort) / 10000); };
+  const age = (c) => ageLabel(ageAt(c, now), { short: true }) || null;
   const sources = (c) => (Array.isArray(c.fm.sources) ? c.fm.sources.length : 0);
 
   let mode = $state('ego');
@@ -92,9 +92,9 @@
             <tr data-entity={c.id} class:future={store.isFuture(c.id)} class:dead={!!diedBy(c)}>
               <td><Avatar id={c.id} size={32} /></td>
               <td><EntityLink id={c.id} label={c.title.replace(/\s*\([^)]*\)\s*$/, '')} />{#if c.living} <span class="chip">living</span>{/if}</td>
-              <td class="small num">{lifespan(c) || '—'}{diedBy(c) ? ' †' : ''}</td>
-              <td class="small num">{age(c) ?? '—'}</td>
-              <td class="small">{#if store.snap?.presence[c.id] && !diedBy(c)}<EntityLink id={store.snap.presence[c.id].place} />{:else}—{/if}</td>
+              <td class="small num">{lifeLine(c) || '—'}{diedBy(c) ? ' †' : ''}</td>
+              <td class="small num" title={ageAt(c, now).deathUnknown ? 'Death not recorded in the sources' : null}>{age(c) ?? '—'}</td>
+              <td class="small">{#if store.snap?.presence[c.id] && !diedBy(c) && !ageAt(c, now).deathUnknown}<EntityLink id={store.snap.presence[c.id].place} />{:else}—{/if}</td>
               {#each ['parents', 'spouses', 'children'] as k (k)}
                 <td class="small">{#each fam(c.id, k) as x, i (x)}{#if i}{', '}{/if}<EntityLink id={x} label={store.name(x).replace(/\s*\([^)]*\)\s*$/, '')} />{:else}—{/each}</td>
               {/each}
