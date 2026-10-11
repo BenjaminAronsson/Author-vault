@@ -3,16 +3,18 @@
 //
 //   vault plan        <World> <story> [next|all|C05|C03-C09]     chapters to do, words, token estimate
 //   vault context     <World> <story> <Cxx> [--for world|characters] [--events-from <patch-a.json>]
-//   vault apply       <World> <patch.json> [--story B1 --chapter B1-C03 --canon book|expansion]
+//   vault apply       <World> <patch.json> [--story B1 --chapter B1-C03 --canon book|expansion] [--date 1880 (genealogy)]
 //   vault lint        <World> [--json] [--touched <file>…]         mechanical continuity checks
 //   vault briefing    <World> <Character> --at B1/C05 [--cont main]   /become briefing, cut off exactly
 //   vault done        <World> <story> <Cxx> "<summary>"            mark extracted + commit the world repo
-//   vault init-world  <World>                                       new world (folders, notes, local repo)
+//   vault init-world  <World> [--kind genealogy]                    new world (folders, notes, local repo)
 //   vault add-story   <World> <id> [--from <dir>] [--title …] [--order N] [--continuity c] [--canon book]
 //   vault import-books <World> <convert-output-dir> [B1,B3…]       add stories from an omnibus books.tsv
+//   vault add-archive <World> <folder|file…>                        genealogy: add new .txt/.docx/.md/.pdf research files
 //
 // Needs the viewer's dependencies once:  npm install --prefix site
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -32,7 +34,7 @@ const cmd = argv.shift();
 if (cmd === 'plan') {
   const { plan } = await lib('vault/plan.js');
   const p = plan(worldDir(argv[0]), argv[1] ?? die('story id'), argv[2] ?? 'next');
-  console.log(`${p.story}: ${p.total} chapters · extracted through ${p.extractedThrough ?? '—'}`);
+  console.log(`${p.story}: ${p.total} ${p.archive ? 'source files' : 'chapters'} · extracted through ${p.extractedThrough ?? '—'}`);
   for (const c of p.chapters) console.log(`  ${c.cid}  ${String(c.words).padStart(6)} words${c.redo ? '  (re-extract)' : ''}`);
   console.log(`${p.chapters.length} chapter(s), ${p.words.toLocaleString()} words ≈ ${(p.tokens / 1e6).toFixed(2)} M tokens`);
 } else if (cmd === 'context') {
@@ -65,9 +67,10 @@ if (cmd === 'plan') {
   const cid = flag('chapter', patch.cid) ?? die('--chapter required (or "cid" in the patch)');
   const story = flag('story', patch.story ?? cid.replace(/-C\d+$/, ''));
   const canon = flag('canon', patch.canon ?? 'book');
+  const date = flag('date', patch.date ?? '');
   const src = chapterSource(dir, story, cid);
   const world = new World(dir, TEMPLATES);
-  const r = applyPatch(world, patch, { cid, story, canon, source: canon === 'book' ? src?.text ?? null : null });
+  const r = applyPatch(world, patch, { cid, story, canon, date, source: canon === 'book' ? src?.text ?? null : null });
   console.log(`✓ ${cid}: ${r.created.length} created, ${r.updated.length} updated${r.rejectedQuotes.length ? `, ${r.rejectedQuotes.length} quote(s) rejected (not verbatim)` : ''}`);
   for (const q of r.rejectedQuotes) console.log(`  ✗ ${q.where} · ${q.who}: "${String(q.text).slice(0, 80)}"`);
   for (const w of r.warnings ?? []) console.log(`  ! ${w}`);
@@ -103,7 +106,7 @@ if (cmd === 'plan') {
 } else if (cmd === 'init-world') {
   const { initWorld } = await lib('vault/scaffold.js');
   const w = argv[0] ?? die('World name');
-  const r = initWorld(VAULT, TEMPLATES, w);
+  const r = initWorld(VAULT, TEMPLATES, w, { kind: flag('kind', '') });
   console.log(`✓ ${w}: ${r.created.length} notes created`);
   execFileSync(join(ROOT, 'tools/world-repo.sh'), ['init', w], { stdio: 'inherit' });
 } else if (cmd === 'add-story') {
@@ -117,7 +120,25 @@ if (cmd === 'plan') {
   const dir = worldDir(w);
   const books = readBooks(join(out ?? die('convert output dir'), 'books.tsv')).filter((b) => !only || only.split(',').includes(b.id));
   books.forEach((b, i) => { const r = addStory(dir, TEMPLATES, b.id, { from: join(out, b.id), title: b.title, order: i + 1 }); console.log(`✓ ${b.id} ${b.title}: ${r.chapters} chapters`); });
+} else if (cmd === 'add-archive') {
+  const { addArchive } = await lib('vault/scaffold.js');
+  const [w, ...inputs] = argv;
+  const dir = worldDir(w);
+  const OK = /\.(txt|md|docx|pdf)$/i;
+  const walk = (p) => (statSync(p).isDirectory() ? readdirSync(p).sort().filter((n) => !n.startsWith('.')).flatMap((n) => walk(join(p, n))) : [p]);
+  const paths = (inputs.length ? inputs : die('folder or files')).flatMap((p) => walk(resolve(p)));
+  for (const p of paths.filter((p) => !OK.test(p))) console.log(`  ! skipped ${p} (${/\.doc$/i.test(p) ? 'old .doc: save it as .docx' : 'not .txt/.md/.docx/.pdf'})`);
+  const tmp = mkdtempSync(join(tmpdir(), 'archive-'));
+  const files = paths.filter((p) => OK.test(p)).map((p, i) => {
+    const out = join(tmp, String(i));
+    execFileSync('python3', ['-I', join(ROOT, '.claude/skills/import-book/convert.py'), p, out, '--whole'], { stdio: ['ignore', 'ignore', 'pipe'] }); // stderr is in the error if it fails
+    return { path: p, text: readFileSync(join(out, '_full.md'), 'utf8') };
+  });
+  rmSync(tmp, { recursive: true, force: true });
+  const r = addArchive(dir, TEMPLATES, files);
+  for (const a of r.added) console.log(`✓ ${a.cid}  ${a.file}${a.replaces ? `  (new version of ${a.replaces})` : ''}`);
+  console.log(`${r.added.length} added, ${r.skipped.length} already in the archive`);
 } else {
-  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 14).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 15).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
   process.exit(cmd ? 1 : 0);
 }

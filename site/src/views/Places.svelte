@@ -5,6 +5,7 @@
   import { wikilinks, chapterRef, stripLinks } from '../parser/markdown.js';
   import WorldMap from '../components/WorldMap.svelte';
   import TravelGraph from '../components/TravelGraph.svelte';
+  import { parseDate } from '../lib/dates.js';
 
   let mapMode = $state('map');
   let allMoves = $state(false);
@@ -42,11 +43,13 @@
     return Object.entries(m).map(([k, who]) => ({ a: k.split('|')[0], b: k.split('|')[1], who: [...who] }));
   });
 
+  // in_world is a year (fantasy calendars: -300, 1203) or, in genealogy worlds, a date as written ("1867-11-02", "ca 1850")
+  const inWorldYear = (v) => { const n = Number(v); if (isFinite(n)) return n; const d = parseDate(v); return d ? d.sort / 10000 : NaN; };
   // History: eras + dated events + chronology lines, gated by reading order
   const eras = $derived(Object.values(store.model.entities).filter((e) => e.type === 'era' && store.visible(e.id)).sort((a, b) => (a.fm.order ?? 0) - (b.fm.order ?? 0)));
   const dated = $derived(Object.values(store.model.entities)
     .filter((e) => e.type === 'event' && e.fm.in_world !== undefined && e.fm.in_world !== '' && store.visible(e.id))
-    .sort((a, b) => Number(a.fm.in_world) - Number(b.fm.in_world)));
+    .sort((a, b) => inWorldYear(a.fm.in_world) - inWorldYear(b.fm.in_world)));
   const chrono = $derived(Object.values(store.model.entities).find((e) => e.type === 'chronology'));
   const datedIds = $derived(new Set(dated.map((d) => d.id)));
   const plain = (t) => stripLinks(t.text).replace(/^[·\s]+|[·\s]+$/g, '');
@@ -55,7 +58,7 @@
   const nums = (v) => (String(v ?? '').match(/[+-]?\d+/g) ?? []).map(Number);
   const bands = $derived(eras.map((e) => { const [a, b] = nums(e.fm.span); return { e, a, b: b ?? a }; }).filter((x) => x.a !== undefined));
   const points = $derived([
-    ...dated.map((ev) => ({ id: ev.id, y: Number(ev.fm.in_world), label: ev.title })),
+    ...dated.map((ev) => ({ id: ev.id, y: inWorldYear(ev.fm.in_world), label: ev.title })).filter((p) => isFinite(p.y)),
     ...chronoLines.filter((t) => /^[+-]?\d+$/.test(t.marker)).map((t) => ({ id: store.model.nameIndex[t.links[0]?.toLowerCase()] ?? null, y: Number(t.marker), label: plain(t) || t.links[0] })),
   ].filter((p, i, all) => all.findIndex((q) => q.label === p.label && q.y === p.y) === i));
   const dom = $derived.by(() => {

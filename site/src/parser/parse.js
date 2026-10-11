@@ -2,6 +2,12 @@
 // Runs in Node (scripts/build-data.mjs) and in the browser (folder mode).
 import { splitFrontmatter, sections, wikilinks, firstLink, table, listItems, quotes, chapterRef } from './markdown.js';
 import { parseTimeline } from './timeline.js';
+import { parseDate, compareDates } from '../lib/dates.js';
+
+/** Genealogy worlds: the step for facts without a date (shown first). Same as apply.js UNDATED. */
+export const UNDATED = 'odaterat';
+/** Genealogy worlds: id of the generated story whose "chapters" are the dates. */
+export const TIME_STORY = 'tid';
 
 const TYPE_BY_FOLDER = {
   Characters: 'character', Places: 'location', Factions: 'faction', Items: 'item', Concepts: 'concept',
@@ -70,6 +76,7 @@ export function parseWorld({ world, files, images = [] }) {
         id: sid, entity: e.id, title: e.fm.title || e.title, order: Number(e.fm.order ?? 99),
         continuity: e.fm.continuity ?? 'main', canon: e.canon, placement: String(e.fm.placement ?? ''),
         pov_style: e.fm.pov_style ?? '', chapters: [],
+        archive: e.fm.kind === 'archive', // genealogy sources: cited, never steps on the clock
       };
       nameIndex[sid.toLowerCase()] ??= e.id;
     }
@@ -90,6 +97,8 @@ export function parseWorld({ world, files, images = [] }) {
       summary: (e.sections.Summary?.text ?? '').trim(),
       canon: e.canon ?? story.canon, continuity: e.fm.continuity ?? story.continuity,
       inWorld: e.fm.in_world ?? null,
+      archive: !!story.archive, dated: e.fm.dated ? String(e.fm.dated) : null,
+      sourceKind: e.fm.source_kind ?? null, evidence: e.fm.evidence ?? null, archiveRef: e.fm.archive_ref ?? null, file: e.fm.file ?? null,
     };
     chapters[cid] = ch;
     story.chapters.push(cid);
@@ -98,8 +107,37 @@ export function parseWorld({ world, files, images = [] }) {
   }
   for (const s of Object.values(stories)) s.chapters.sort((a, b) => chapters[a].num - chapters[b].num);
 
+  // Genealogy: the clock is in-world time. Every distinct date (as written) becomes a step of the story "tid",
+  // ordered by real time; "odaterat" comes first. Sources (the archive) stay citations.
+  const genealogy = entities.World?.fm?.kind === 'genealogy';
+  if (genealogy) {
+    const labels = new Set();
+    const isDate = (v) => v != null && (String(v).trim() === UNDATED || parseDate(v) !== null);
+    for (const e of Object.values(entities)) {
+      for (const t of e.timeline) if (isDate(t.marker)) labels.add(t.marker);
+      for (const k of ['date', 'in_world', 'born', 'died']) if (isDate(e.fm[k]) && (k !== 'in_world' || e.type === 'event')) labels.add(String(e.fm[k]).trim());
+    }
+    for (const c of Object.values(chapters)) if (c.dated && isDate(c.dated)) labels.add(c.dated.trim());
+    const sorted = [...labels].sort((a, b) => (a === UNDATED ? -1 : b === UNDATED ? 1 : compareDates(a, b)));
+    stories[TIME_STORY] = { id: TIME_STORY, entity: null, title: 'Tid', order: 0, continuity: 'main', canon: 'book', placement: '', pov_style: '', chapters: sorted, timeAxis: true };
+    sorted.forEach((label, i) => {
+      chapters[label] = { id: label, entity: null, story: TIME_STORY, num: i + 1, title: label, pov: null, characters: [], places: [], events: [], summary: '', canon: 'book', continuity: 'main', inWorld: label, date: parseDate(label), timeStep: true };
+    });
+  }
+
   // Per-type enrichment
-  const step = (v) => chapterRef(v);
+  // genealogy: a citation of a source maps to the source's own date (a letter written 1868 is known from 1868), or null = always known
+  const step = genealogy
+    ? (v) => {
+      if (v == null) return null;
+      const raw = String(firstLink(v) ?? v).trim();
+      if (chapters[raw]?.timeStep) return raw;
+      const r = chapterRef(v);
+      const c = r && chapters[r];
+      if (c?.archive) return c.dated && chapters[c.dated.trim()] ? c.dated.trim() : null;
+      return r;
+    }
+    : (v) => chapterRef(v);
   for (const e of Object.values(entities)) {
     e.firstSeen = step(e.fm.first_seen ?? (e.fm.when ? e.fm.when : null));
     e.image = resolveImage(e.fm.image);
@@ -112,7 +150,10 @@ export function parseWorld({ world, files, images = [] }) {
     e.partOf = resolve(firstLink(e.fm.part_of));
     e.map = e.fm.map && typeof e.fm.map === 'object' && isFinite(e.fm.map.x) && isFinite(e.fm.map.y) ? { x: Number(e.fm.map.x), y: Number(e.fm.map.y) } : null;
     for (const t of e.timeline) {
-      t.step = chapters[t.marker] ? t.marker : null;
+      t.step = chapters[t.marker] && !chapters[t.marker].archive ? t.marker : null;
+      if (t.step && chapters[t.step].timeStep) t.date = chapters[t.step].date;
+      // an undated "died" or "lived at" can't be placed in time: keep the line, but it doesn't change state at any step
+      if (t.step === UNDATED && chapters[t.step]?.timeStep && (t.tags.status || t.tags.at)) { t.undatedState = { status: t.tags.status, at: t.tags.at }; t.tags.status = null; t.tags.at = null; }
       t.tags.at = resolve(t.tags.at) ?? t.tags.at;
       t.tags.rel.forEach((r) => (r.toId = resolve(r.to)));
       if (!t.step && t.marker !== 'EXP' && !/^[+-]?\d/.test(t.marker)) warnings.push({ kind: 'timeline-step', path: e.path, msg: `Unknown step "${t.marker}"` });
@@ -121,7 +162,22 @@ export function parseWorld({ world, files, images = [] }) {
         t.step = step(exp?.fm.at);
       }
     }
+    if (genealogy) {
+      // first seen = earliest date on the timeline (birth), else the date of the note's own date fields
+      const idx = (st) => chapters[st]?.num ?? Infinity;
+      const own = ['born', 'date', 'in_world'].map((k) => (e.fm[k] != null ? String(e.fm[k]).trim() : null)).filter((x) => x && chapters[x]?.timeStep);
+      const first = [...e.timeline.map((t) => t.step).filter(Boolean), ...own].sort((a, b) => idx(a) - idx(b))[0];
+      e.firstSeen = first ?? (e.type === 'chapter' ? null : e.firstSeen);
+      for (const t of e.timeline) for (const k of ['evidence', 'confidence']) if (t.tags.other?.[k]) t[k] = t.tags.other[k];
+    }
     if (e.type === 'character') {
+      if (genealogy || e.fm.parents || e.fm.spouses) {
+        const links = (k) => wikilinks(e.fm[k]).map(resolve).filter(Boolean);
+        e.kin = { parents: links('parents'), children: links('children'), spouses: links('spouses'), siblings: links('siblings') };
+        e.born = e.fm.born != null ? String(e.fm.born) : null;
+        e.died = e.fm.died != null ? String(e.fm.died) : null;
+        e.living = e.fm.living === true;
+      }
       const S = e.sections;
       e.goals = table(S.Goals?.text).map((r) => ({ goal: r.goal ?? '', horizon: r.horizon ?? '', status: (r.status ?? '').toLowerCase(), since: step(r.since), source: step(r.source) }));
       e.fears = table(S.Fears?.text).map((r) => ({ fear: r.fear ?? '', root: r['root (where it comes from)'] ?? r.root ?? '', shows: r['how it shows'] ?? '', source: step(r.source) }));
@@ -160,7 +216,7 @@ export function parseWorld({ world, files, images = [] }) {
       const c = entities[owner];
       if (!c) continue;
       (c.memories ??= []).push({
-        id: e.id, title: e.title, event: resolve(firstLink(e.fm.event)), when: step(e.fm.when),
+        id: e.id, title: e.title, event: resolve(firstLink(e.fm.event)), when: step(e.fm.date ?? e.fm.when),
         accuracy: e.fm.accuracy ?? 'unknown', charge: e.fm.emotional_charge ?? '', canon: e.canon,
         text: (e.preamble || Object.entries(e.sections).filter(([k]) => !/^Divergence/.test(k)).map(([, v]) => v.text).join('\n')).trim(),
         divergence: (e.sections['Divergence from objective']?.text ?? '').trim(),
@@ -188,10 +244,26 @@ export function parseWorld({ world, files, images = [] }) {
     }
   }
 
+  // genealogy: who and where at each date step (the chapters' cast, so presence and introductions work as in books)
+  if (genealogy) {
+    for (const e of Object.values(entities)) {
+      for (const t of e.timeline) {
+        const c = t.step && chapters[t.step];
+        if (!c?.timeStep) continue;
+        if (e.type === 'character' && !c.characters.includes(e.id)) c.characters.push(e.id);
+        // the step's "summary": what is recorded on this date, with its source (living people left out)
+        if (e.fm.living !== true) c.summary += `${c.summary ? '\n' : ''}- [[${e.title}]]: ${t.text}`;
+        if (t.tags.at && entities[t.tags.at] && !c.places.includes(t.tags.at)) c.places.push(t.tags.at);
+      }
+      const d = e.type === 'event' && (e.fm.date ?? e.fm.in_world);
+      if (d != null && chapters[String(d).trim()]?.timeStep) chapters[String(d).trim()].events.push(e.id);
+    }
+  }
+
   const worldEntity = entities.World ?? null;
   return {
     world, generatedAt: new Date().toISOString(),
     worldEntity: worldEntity?.id ?? null,
-    entities, stories, chapters, nameIndex, warnings,
+    entities, stories, chapters, nameIndex, warnings, genealogy,
   };
 }

@@ -92,3 +92,18 @@ describe('model', () => {
     expect(model.warnings.filter((w) => w.kind === 'yaml')).toEqual([]);
   });
 });
+
+describe('the Norrgården genealogy example', async () => {
+  const { buildClock } = await import('../src/parser/derive.js');
+  const m = parseWorld({ world: 'Norrgården', ...readWorldFolder(decodeURIComponent(new URL('../fixtures/Sample/Norrgården', import.meta.url).pathname)) });
+  it('is a genealogy world on a date clock with a family', () => {
+    expect(m.genealogy).toBe(true);
+    const seq = buildClock(m).sequences.main;
+    expect(seq[0]).toBe('odaterat');
+    expect(seq).toContain('1843-05-12');
+    const anna = m.entities[m.nameIndex['anna persdotter']];
+    expect(anna.kin.parents.length).toBe(2);
+    expect(Object.values(m.entities).some((e) => e.living)).toBe(true);
+    expect(m.warnings.filter((w) => w.kind === 'unresolved-link')).toEqual([]);
+  });
+});

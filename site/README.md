@@ -68,6 +68,7 @@ node scripts/build-data.mjs [--vault <path>] [--out <dir>] [--demo] <World>|--al
   - `motion.svelte.js`: animation
 - **`src/views/`, `src/components/`:** the Svelte 5 UI. All UI text is in `src/lib/strings.js`.
 - **`fixtures/Sample/Saltmarrow/`:** a tiny world that exercises every feature. `scripts/make-sample-images.mjs` makes its images.
+- **`fixtures/Sample/Norrgården/`:** a fictional genealogy world (släktforskning): dates as the timeline, sources with evidence, a family tree, a family story that contradicts the church books, and a hidden living person. Its four source files are in `fixtures/slakt/`.
 
 ## What the viewer reads
 Everything follows `book-universe/_system/SCHEMA.md`. These fields drive the visual features. All are optional, with fallbacks:

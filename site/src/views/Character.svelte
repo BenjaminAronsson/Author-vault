@@ -7,6 +7,9 @@
   import Actions from '../components/Actions.svelte';
   import Web from '../components/Web.svelte';
   import TimelineList from '../components/TimelineList.svelte';
+  import FamilyTree from '../components/FamilyTree.svelte';
+  import { lifespan } from '../lib/kin.js';
+  import { parseDate } from '../lib/dates.js';
   import { relationsAt, colorOf, describe } from '../lib/relations.js';
   import { sectionMarkdown, wikilinks } from '../parser/markdown.js';
 
@@ -31,7 +34,7 @@
     const visibleChanges = changes.filter((c) => !fut(c.step));
     const now = store.snap?.goals[id]?.[g.goal] ?? (visibleChanges.at(-1)?.status) ?? (fut(g.since) ? null : g.status || 'active');
     return { ...g, changes, now };
-  }).filter((g) => !g.since || ok(g.since)));
+  }).filter((g) => g.goal && (!g.since || ok(g.since))));
   const fears = $derived((e.fears ?? []).filter((f) => ok(f.source)));
   const dreams = $derived((e.dreams ?? []).filter((d) => ok(d.source)));
   const rel = $derived((store.version, relationsAt(store)));
@@ -51,6 +54,9 @@
   const rest = $derived(e.sectionOrder.filter((h) => !handled.has(h) && sectionMarkdown(S[h]).replace(/[_\-|*:\s]/g, '').length > 20));
   const marks = { achieved: '✓', abandoned: '✕', betrayed: '⚡', active: '●' };
   const accColor = { faithful: 'var(--pos)', partial: 'var(--neu)', distorted: 'var(--neg)', false: 'var(--neg)', unknown: 'var(--neu)' };
+  const gen = $derived(!!store.model.genealogy);
+  const age = $derived.by(() => { const b = parseDate(e.born), n = store.chapter?.date; if (!b || !n || n.sort < b.sort) return null; const d = parseDate(e.died); const end = d && d.sort <= n.sort ? d : n; return Math.floor((end.sort - b.sort) / 10000); });
+  const hasInner = $derived(goalHist.length || fears.length || dreams.length);
   const seqUpTo = $derived(store.sequence.slice(0, store.idx + 1));
   const gx = (cid) => (Math.max(0, seqUpTo.indexOf(cid)) / Math.max(1, seqUpTo.length - 1)) * 100;
 </script>
@@ -61,6 +67,7 @@
     <div class="who">
       <div class="label">Character{#if e.canon === 'expansion'} · <span class="exp-mark">EXP</span> {e.origin ?? ''}{/if}</div>
       <h1>{e.title}{#if /dead/.test(status)} <span class="muted">†</span>{/if}</h1>
+      {#if gen && lifespan(e)}<div class="life">{lifespan(e)}{#if e.living} <span class="chip">living · private</span>{/if}</div>{/if}
       {#if e.aliases.length}<div class="muted small">also: {e.aliases.join(', ')}</div>{/if}
       <div class="chips">{#each chips as c (c)}<span class="chip"><EntityLink id={c} /></span>{/each}</div>
       {#if signature && ok(signature.source)}<p class="quote sig">“{signature.text}”</p>{/if}
@@ -76,14 +83,28 @@
     <div class="nowgrid">
       <div><div class="k">Where</div>{#if place}<EntityLink id={place} />{:else}<span class="muted">{T.unknown}</span>{/if}</div>
       <div><div class="k">Status</div>{status}</div>
+      {#if gen}
+      <div><div class="k">Age</div>{#if age !== null}{age}{#if parseDate(e.born)?.qual !== 'exact' || parseDate(e.born)?.precision !== 'day'} <span class="small muted">(about)</span>{/if}{:else}<span class="muted">—</span>{/if}</div>
+      <div><div class="k">Born</div>{e.born ?? '—'}</div>
+      <div><div class="k">Died</div>{e.died && store.chapter?.date && parseDate(e.died)?.sort <= store.chapter.date.sort ? e.died : '—'}</div>
+      {:else}
       <div><div class="k">Wants</div>{#each goalHist.filter((g) => g.now === 'active') as g (g.goal)}<div>{g.goal}</div>{:else}<span class="muted">—</span>{/each}</div>
       <div><div class="k">Afraid of</div>{#each fears.slice(0, 2) as f (f.fear)}<div>{f.fear}</div>{:else}<span class="muted">—</span>{/each}</div>
       <div><div class="k">Warmest</div>{#if mine[0] && mine[0].n > 0}<EntityLink id={mine[0].to} /> <span class="small muted">{mine[0].bond}</span>{:else}<span class="muted">—</span>{/if}</div>
       <div><div class="k">Coldest</div>{#if mine.at(-1) && mine.at(-1).n < 0}<EntityLink id={mine.at(-1).to} /> <span class="small muted">{mine.at(-1).bond}</span>{:else}<span class="muted">—</span>{/if}</div>
+      {/if}
     </div>
     {#if nowQuote}<p class="quote">“{nowQuote.text}” <span class="small muted">— {nowQuote.mood.toLowerCase()}, {nowQuote.source}</span></p>{/if}
   </section>
 
+  {#if gen || e.kin}
+    <section class="card">
+      <h2>Family <button class="btn ghost small" onclick={() => store.go('family', id)}>Open family tree →</button></h2>
+      <FamilyTree focus={id} up={1} down={1} compact />
+    </section>
+  {/if}
+
+  {#if !gen || hasInner}
   <div class="cols">
     <section class="card">
       <h2>{T.goals}</h2>
@@ -107,6 +128,7 @@
       {#each dreams as d (d.text)}<div class="item"><Markdown text={d.text} /></div>{:else}<p class="muted small">None recorded yet.</p>{/each}
     </section>
   </div>
+  {/if}
 
   {#if voiceMoods.length || e.voice?.expansion?.length}
     <section class="card">
@@ -192,6 +214,7 @@
   .who { flex: 1; display: grid; gap: .4rem; }
   .who h1 { margin: 0; }
   .chips { display: flex; gap: .3rem; flex-wrap: wrap; }
+  .life { font: 600 1rem var(--sans); color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .sig { font-size: 1.2rem; margin: .2rem 0; }
   .nowgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; }
   .k { font: 600 .7rem var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }

@@ -6,6 +6,7 @@ argument-hint: <Character> [at <story>/Cxx] [continuity] [World]
 # /become
 
 Arguments: `$ARGUMENTS` → character name (or alias), optional `at <story>/Cxx` (default: the latest extracted point), optional continuity (default `main`), and the World (ask if it's ambiguous).
+**Genealogy worlds** (`World.md` has `kind: genealogy`) take a **date** instead: `at 1880` or `at 1880-06-01`. The briefing then cuts off at that date and includes the person's age and family as of then.
 
 ## 1. Get the briefing (deterministic, spoiler-safe)
 ```
@@ -28,6 +29,10 @@ When the session ends, save the transcript to `book-universe/<World>/Expansions/
 2. Apply it as expansion canon:
    ```
    node tools/vault.mjs apply "<World>" <patch> --chapter <cutoff, e.g. B1-C05> --canon expansion
+   ```
+   Genealogy worlds cite the session, and date undated lines at the cutoff:
+   ```
+   node tools/vault.mjs apply "<World>" <patch> --chapter EXP-<date>-<character>-<slug> --canon expansion --date <cutoff date>
    ```
 3. Tell the user what the character now "remembers", and list the conflicts with canon that lore-scribe flagged instead of writing.
 

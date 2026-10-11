@@ -70,8 +70,93 @@
     else if (k === 'End') { ev.preventDefault(); store.setAt(seq[book.end]); }
   }
   const showNums = $derived(bookSteps.length <= 45);
+
+  // Genealogy worlds: the steps are dates. A time-scaled axis (gaps and busy years visible), zoomable to one decade.
+  const gen = $derived(!!store.model.genealogy);
+  const yearOf = (cid) => { const d = ch(cid)?.date; if (!d) return null; const s = Math.floor(d.from ?? d.sort), y = Math.floor(s / 10000), m = Math.floor(s / 100) % 100, dd = s % 100; return y + (m ? (m - 1) / 12 : 0) + (dd ? (dd - 1) / 365 : 0); };
+  const dated = $derived(gen ? seq.map((cid, i) => ({ cid, i, y: yearOf(cid) })).filter((x) => x.y != null) : []);
+  const undated = $derived(gen ? seq.map((cid, i) => ({ cid, i })).filter(({ cid }) => yearOf(cid) == null) : []);
+  let zoom = $state('all'); // all | decade
+  const curYear = $derived(yearOf(seq[store.idx]) ?? dated[0]?.y ?? 0);
+  const range = $derived.by(() => {
+    if (zoom === 'decade') { const a = Math.floor(curYear / 10) * 10; return [a, a + 10]; }
+    const ys = dated.map((x) => x.y);
+    if (!ys.length) return [0, 1];
+    const a = Math.floor(Math.min(...ys) / 10) * 10, b = Math.ceil((Math.max(...ys) + 0.01) / 10) * 10;
+    return [a, Math.max(b, a + 10)];
+  });
+  const pct = (y) => ((y - range[0]) / (range[1] - range[0])) * 100;
+  const visibleSteps = $derived(dated.filter((x) => x.y >= range[0] && x.y <= range[1]));
+  const ticks = $derived.by(() => { const span = range[1] - range[0]; const step = span <= 10 ? 1 : span <= 60 ? 10 : span <= 200 ? 25 : 50; const out = []; for (let y = Math.ceil(range[0] / step) * step; y <= range[1]; y += step) out.push(y); return out; });
+  const decades = $derived([...new Set(dated.map((x) => Math.floor(x.y / 10) * 10))]);
+  const busy = $derived.by(() => { const n = {}; for (const { cid } of dated) n[cid] = ch(cid).characters.length + ch(cid).events.length; return n; });
+  let axis = $state(null);
+  function fromAxis(ev) {
+    const r = axis.getBoundingClientRect();
+    const y = range[0] + ((ev.clientX - r.left) / r.width) * (range[1] - range[0]);
+    let best = null, bd = Infinity;
+    for (const x of visibleSteps) { const d = Math.abs(x.y - y); if (d < bd) { bd = d; best = x; } }
+    if (best) store.setAt(best.cid);
+  }
+  function pickDecade(ev) { stop(); const d = +ev.currentTarget.value; const first = dated.find((x) => x.y >= d); if (first) store.setAt(first.cid); }
 </script>
 
+{#if gen}
+<footer class="scrub" aria-label="Point in time" data-tour="bookmark">
+  <div class="here">
+    <div class="label">Point in time</div>
+    <div class="pickers">
+      <select class="bk" aria-label="Decade" value={Math.floor(curYear / 10) * 10} onchange={pickDecade}>
+        {#if undated.length}<option value={-1} disabled>undated</option>{/if}
+        {#each decades as d (d)}<option value={d}>{d}s</option>{/each}
+      </select>
+      <select class="cp" aria-label="Date" value={seq[store.idx]} onchange={pickChapter}>
+        {#each seq as cid (cid)}<option value={cid}>{cid}{busy[cid] ? ` · ${busy[cid]}` : ''}</option>{/each}
+      </select>
+    </div>
+    {#if caption}
+      <div class="cap" aria-live="polite"><strong>{caption.name}</strong> {caption.text}{#if !caption.on}<span class="muted"> · nothing recorded then</span>{/if}</div>
+    {:else}
+      <div class="small muted pos">{seq[store.idx]} · {store.idx + 1} of {total} dates · later {store.future === 'hide' ? 'hidden' : 'dimmed'}</div>
+    {/if}
+  </div>
+
+  <div class="ctrl">
+    <button class="btn ghost nav" aria-label="Previous date" title="Previous date (←)" onclick={() => { stop(); store.move(-1); }} disabled={store.idx <= 0}>◀</button>
+    <button class="btn play" onclick={play} aria-pressed={playing} aria-label={playing ? 'Pause' : 'Play through time'} title={playing ? 'Pause' : 'Play: step through date by date'}>{playing ? '❚❚' : '▶'}</button>
+    <button class="btn ghost nav" aria-label="Next date" title="Next date (→)" onclick={() => { stop(); store.move(1); }} disabled={store.idx >= total - 1}>▶</button>
+    <div class="follow" data-tour="follow">
+      <select aria-label="Follow a person" value={store.follow ?? ''} onchange={(ev) => store.setFollow(ev.currentTarget.value)}>
+        <option value="">Follow…</option>
+        {#each people as p (p.id)}<option value={p.id}>👁 {p.title}</option>{/each}
+      </select>
+      <select aria-label="Playback speed" bind:value={store.speed}><option value={3200}>slow</option><option value={1800}>normal</option><option value={900}>fast</option></select>
+    </div>
+  </div>
+
+  <div class="strips">
+    <div class="zoom" role="group" aria-label="Zoom">
+      <button class="btn ghost small" class:on={zoom === 'all'} aria-pressed={zoom === 'all'} onclick={() => (zoom = 'all')}>All time</button>
+      <button class="btn ghost small" class:on={zoom === 'decade'} aria-pressed={zoom === 'decade'} onclick={() => (zoom = 'decade')}>Decade</button>
+      {#if undated.length}<button class="btn ghost small" class:on={undated.some((u) => u.i === store.idx)} onclick={() => { stop(); store.setAt(undated[0].cid); }} title="Facts without a date">undated</button>{/if}
+    </div>
+    <div class="axis" bind:this={axis} role="slider" tabindex="0"
+      aria-label="Timeline" aria-valuemin="1" aria-valuemax={total} aria-valuenow={store.idx + 1} aria-valuetext={seq[store.idx]}
+      onkeydown={key}
+      onpointerdown={(ev) => { stop(); dragging = true; axis.setPointerCapture(ev.pointerId); fromAxis(ev); }}
+      onpointermove={(ev) => dragging && fromAxis(ev)}
+      onpointerup={() => (dragging = false)}>
+      <span class="readfill" style:width={`${Math.max(0, Math.min(100, pct(curYear)))}%`}></span>
+      {#each ticks as t (t)}<span class="tick" style:left={`${pct(t)}%`}><span class="tl">{t}</span></span>{/each}
+      {#each visibleSteps as x (x.cid)}
+        <span class="mark" class:read={x.i <= store.idx} class:cur={x.i === store.idx} class:approx={ch(x.cid).date?.qual !== 'exact' || ch(x.cid).date?.precision === 'span'}
+          style:left={`${pct(x.y)}%`} style:height={`${30 + Math.min(1, (busy[x.cid] ?? 0) / 6) * 55}%`} title={x.cid}></span>
+      {/each}
+      {#if dated.some((x) => x.i === store.idx)}<span class="pin" style:left={`${pct(curYear)}%`} aria-hidden="true">{seq[store.idx]}</span>{/if}
+    </div>
+  </div>
+</footer>
+{:else}
 <footer class="scrub" aria-label="Reading position" data-tour="bookmark">
   <div class="here">
     <div class="label">You've read up to</div>
@@ -136,6 +221,7 @@
     </div>
   </div>
 </footer>
+{/if}
 
 <style>
   .scrub { display: grid; grid-template-columns: minmax(15rem, 22rem) auto 1fr; gap: .8rem; align-items: center; padding: .55rem 1rem .6rem; background: var(--card); border-top: 1px solid var(--rule); }
@@ -170,6 +256,19 @@
   .num { position: absolute; bottom: 2px; font: 600 .62rem var(--sans); color: var(--ink-2); pointer-events: none; }
   .cell.read .num { color: var(--paper); }
   .pin { position: absolute; top: -15px; white-space: nowrap; font: 700 .6rem var(--sans); color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+  .zoom { display: flex; gap: .2rem; }
+  .zoom .btn { padding: .05rem .45rem; font-size: .72rem; }
+  .zoom .on { background: var(--paper-2); box-shadow: inset 0 -2px 0 var(--accent); }
+  .axis { position: relative; height: 40px; margin-top: 12px; border-bottom: 1px solid var(--rule); cursor: pointer; touch-action: none; user-select: none; }
+  .readfill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--accent) 10%, transparent); pointer-events: none; }
+  .tick { position: absolute; bottom: 0; height: 6px; border-left: 1px solid var(--ink-3); pointer-events: none; }
+  .tl { position: absolute; bottom: -1.05rem; transform: translateX(-50%); font: .6rem var(--sans); color: var(--ink-3); }
+  .mark { position: absolute; bottom: 0; width: 3px; margin-left: -1px; background: var(--ink-3); opacity: .35; border-radius: 2px 2px 0 0; pointer-events: none; }
+  .mark.read { background: var(--accent); opacity: .6; }
+  .mark.approx { background: repeating-linear-gradient(to top, currentColor 0 3px, transparent 3px 5px); color: var(--ink-3); }
+  .mark.read.approx { color: var(--accent); }
+  .mark.cur { opacity: 1; width: 5px; margin-left: -2px; background: var(--accent); }
+  .axis .pin { top: -14px; transform: translateX(-50%); }
   @media (max-width: 800px) {
     .scrub { grid-template-columns: 1fr auto; }
     .strips { grid-column: 1 / -1; }

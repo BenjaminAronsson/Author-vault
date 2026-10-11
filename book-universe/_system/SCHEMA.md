@@ -147,6 +147,37 @@ Chapter notes' `characters:` and `places:` frontmatter are the fallback for pres
   - **Positions are stable**: they're stored in the notes and never redrawn. The World Viewer's **Arrange** mode writes them for you: drag pins, drag in unplaced places, auto-arrange, undo, give a place its own map, use an image as a map.
   - **Geography hints**: write them in prose under `## Where & how › Getting there`, e.g. "two days' ride north of [[Port Kacollia]], across the ford". They help a person (or Claude) place pins sensibly.
 
+## Archive & kinship (genealogy worlds)
+A world made with `vault init-world "<World>" --kind genealogy` (`World.md`: `kind: genealogy`) holds family history (släktforskning) instead of a book. Everything else in this schema still applies. The differences:
+- **Sources, not chapters.** Research files (.txt/.docx/.md/.pdf) are added with `vault add-archive`. Each becomes `_sources/arkiv/Cxx.md` (first line: the original file name, which is kept in `_sources/arkiv/original/`). `_sources/arkiv/index.tsv` lists them with a content hash, so re-adding a folder only adds new or changed files. A changed file becomes a new source, and the old one stays.
+  - The story `Stories/arkiv/Story.md` has `kind: archive`. Its chapter notes are **source notes**, with `source_kind` (husförhörslängd, dopbok, bouppteckning, brev, minnen…), `evidence`, `archive_ref` (volume/page, AID, bild-id), `file` and `dated` (when the document was written).
+  - Claims cite `[[arkiv-Cxx]]`.
+- **The clock is the dates.** A timeline line's marker is the in-world date **as written**: `- **1843-05-12** · … ([[arkiv-C03]])`. Other examples are `1843`, `ca 1843`, `före 1850`, `efter 1850`, `mellan 1840 och 1845`, `1840–45`. Facts without a date use `odaterat`.
+  - The viewer orders the distinct dates by real time and steps through them (`site/src/lib/dates.js`).
+  - Lines are kept in date order, whatever order the sources arrive in.
+  - A citation of a source counts from the source's `dated` (a letter written in 1868 is known from 1868).
+- **Evidence tags** on timeline lines:
+  - `` `evidence:primär|sekundär|tradition` `` says what kind of source this is: written at the time, written later, or family lore.
+  - `` `confidence:belagd|trolig|hypotes` `` says how sure the fact is.
+- **People.**
+  - Note names are name plus life years, `Anna Persdotter (1843–1910)`, because names repeat.
+  - Every other name form goes in `aliases`: spellings, patronymics, soldier names and married names.
+  - Frontmatter: `born`, `died` (as written), `living: true` for people who may be alive. Living people are hidden in the viewer by default, and `build-data.mjs --redact-living` replaces them for a shared copy.
+  - Possible duplicates are **suggested** by lint, never merged automatically.
+- **Kinship** is frontmatter link lists, written on both sides by `apply`, plus a Relations row (`kin · far`, `kin · barn`, `hushåll · piga`) with detail, span, confidence and source:
+  ```yaml
+  parents: ["[[Per Andersson (1812–1867)]]"]
+  children: []
+  spouses: ["[[Erik Svensson (1840–1901)]]"]
+  siblings: []
+  ```
+  Households (piga, dräng, inhyses, fosterbarn) are Relations rows only.
+- **Conflicting sources.** When a later source gives a different value for a field that's already set, the first value is kept. A `> [!warning] Contradiction` line goes under `## Contradictions` with both values and the source. Birth ≠ baptism and death ≠ burial: they are separate dated lines.
+- **Goals, Fears and Dreams are optional** for people in genealogy worlds. Letters and memoirs still give voice, memories (with `accuracy`) and perspectives.
+- **Lint** adds: `possible-duplicate`, `contradiction`, `parent-age`, `born-after-parent-death`, `died-before-born`, `one-sided-kin`, `maybe-living`.
+- **Open research questions** are Threads with `kind: forskningsfråga`, listing which record would settle them.
+- **`/become`** takes a date: `vault briefing "<World>" "<Name>" --at 1880-06-01`. The briefing includes age and family as of that date.
+
 ## Patches and the `vault` tool
 **Agents never edit notes.** They read a chapter, or a conversation, and write one **JSON patch**. `node tools/vault.mjs apply` writes it into the notes, deterministically:
 - creates missing notes from these templates, with a `voice.md` for every character
@@ -169,5 +200,8 @@ Chapter notes' `characters:` and `places:` frontmatter are the fallback for pres
 | `perspectives` | `[{target, by, text}]` | `## Perspectives › ### As seen by [[by]]` |
 | `glossary` | `[{term, meaning}]` | `Concepts/Glossary.md` |
 | `style` | `{notes, samples[]}` | `Stories/<story>/Style.md` |
+| `kin` | `[{a, b, kind: parent\|spouse\|sibling\|household, role, back, detail, from, to, at, confidence}]` (genealogy) | `parents/children/spouses/siblings` on both notes + Relations rows |
+
+Genealogy patches also use `timeline[].date`, `timeline[].evidence`, `timeline[].confidence`, `memories[].date`, and on `chapter`: `source_kind`, `evidence`, `archive_ref`, `file`, `dated`.
 
 Patches are kept in `<World>/.vault/patches/`, which isn't committed. Re-applying them rebuilds the notes, at no token cost.

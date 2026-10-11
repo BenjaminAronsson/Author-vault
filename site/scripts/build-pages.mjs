@@ -17,10 +17,10 @@ mkdirSync(join(out, 'data'), { recursive: true });
 execFileSync(process.execPath, [join(site, 'node_modules/vite/bin/vite.js'), 'build'], { cwd: site, stdio: 'inherit' });
 copyFileSync(join(site, 'dist/index.html'), join(out, 'index.html'));
 if (demo) {
-  // The fictional Sample world only, never anything from book-universe/.
-  execFileSync(process.execPath, [join(site, 'scripts/build-data.mjs'), '--demo', '--vault', join(site, 'fixtures/Sample'), '--out', join(out, 'data'), 'Saltmarrow'], { stdio: 'inherit' });
+  // The fictional Sample worlds only (a book world and a genealogy world), never anything from book-universe/.
+  execFileSync(process.execPath, [join(site, 'scripts/build-data.mjs'), '--demo', '--vault', join(site, 'fixtures/Sample'), '--out', join(out, 'data'), 'Saltmarrow', 'Norrgården'], { stdio: 'inherit' });
 } else {
   writeFileSync(join(out, 'data/worlds.js'), 'window.WORLD_INDEX = [];\n');
 }
 writeFileSync(join(out, '.nojekyll'), '');
-console.log(`✓ Pages site in ${out} (app only${demo ? ' + Sample demo' : ''})`);
+console.log(`✓ Pages site in ${out} (app only${demo ? ' + Sample demos' : ''})`);

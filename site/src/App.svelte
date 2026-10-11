@@ -13,6 +13,7 @@
   import People from './views/People.svelte';
   import Places from './views/Places.svelte';
   import Reader from './views/Reader.svelte';
+  import Family from './views/Family.svelte';
   import Character from './views/Character.svelte';
   import Entity from './views/Entity.svelte';
   import Scrubber from './components/Scrubber.svelte';
@@ -107,7 +108,7 @@
     for (const e of Object.values(store.model?.entities ?? {})) if (e.canon in c) c[e.canon]++;
     return c;
   });
-  const nav = ['home', 'timeline', 'people', 'places', 'reader'];
+  const nav = $derived(store.model?.genealogy ? ['home', 'timeline', 'people', 'family', 'places', 'reader'] : ['home', 'timeline', 'people', 'places', 'reader']);
   const selType = $derived(store.sel ? store.model?.entities[store.sel]?.type : null);
   const pendingHere = $derived(store.pending.filter((p) => p.world === store.model?.world));
   let saveMsg = $state('');
@@ -143,7 +144,7 @@
       </button>
       <nav aria-label="Views" data-tour="nav">
         {#each nav as v (v)}
-          <button class="navb" class:on={store.view === v} aria-current={store.view === v ? 'page' : undefined} onclick={() => store.go(v)}>{T.nav[v]}</button>
+          <button class="navb" class:on={store.view === v} aria-current={store.view === v ? 'page' : undefined} onclick={() => store.go(v)}>{(store.model.genealogy && T.navGenealogy[v]) || T.nav[v]}</button>
         {/each}
       </nav>
       <button class="btn searchb" data-tour="search" onclick={() => (store.searchOpen = true)} aria-keyshortcuts="Control+K">⌕ {T.search} <kbd>⌘K</kbd></button>
@@ -152,7 +153,7 @@
       <div class="filters" role="group" aria-label="Canon filter">
         {#each ['book', 'expansion', 'draft'] as c (c)}
           {#if counts[c] || c === 'book'}
-            <button class="fchip {c}" class:on={store.canon.includes(c)} aria-pressed={store.canon.includes(c)} onclick={() => store.toggleCanon(c)}>{T.canon[c]} <span>{counts[c]}</span></button>
+            <button class="fchip {c}" class:on={store.canon.includes(c)} aria-pressed={store.canon.includes(c)} onclick={() => store.toggleCanon(c)}>{store.model.genealogy && c === 'book' ? 'Records' : T.canon[c]} <span>{counts[c]}</span></button>
           {/if}
         {/each}
       </div>
@@ -188,6 +189,7 @@
           {#if selType === 'character'}<Character id={store.sel} />{:else}<Entity id={store.sel} />{/if}
         {:else if store.view === 'timeline'}<Timeline />
         {:else if store.view === 'people'}<People />
+        {:else if store.view === 'family'}<Family />
         {:else if store.view === 'places'}<Places />
         {:else if store.view === 'reader'}<Reader />
         {:else}<Home />{/if}

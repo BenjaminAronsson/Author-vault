@@ -12,13 +12,24 @@
   const changes = $derived((store.snap?.relChanges ?? []).filter((r) => store.visible(r.from) && store.visible(r.to)));
   const story = $derived(ch ? store.model.stories[ch.story] : null);
   const isDead = (id) => /dead/.test(store.snap?.status[id] ?? '');
+  // genealogy: everything recorded on this date, with its source
+  const facts = $derived(ch?.timeStep ? Object.values(store.model.entities).flatMap((e) => (e.timeline ?? []).filter((t) => t.step === ch.id && store.visible(e.id)).map((t) => ({ e, t }))) : []);
+  // (the step's summary lists the same facts for Home and Timeline; here each gets its evidence chip)
 </script>
 
 <div class="reader">
   {#if ch}
+    {#if ch.timeStep}
+      <div class="where small muted">date {ch.num} of {story?.chapters.length}{#if ch.date && ch.date.qual !== 'exact'} · uncertain{/if}</div>
+      <h1>{ch.title}</h1>
+      {#each facts as { e, t } (e.id + t.text)}
+        <p class="fact big"><EntityLink id={e.id} />: <Markdown text={t.text} />{#if t.evidence} <span class="chip">{t.evidence}</span>{/if}</p>
+      {:else}<p class="muted">Nothing recorded on this date.</p>{/each}
+    {:else}
     <div class="where small muted">{story?.title} · chapter {ch.num} of {story?.chapters.length}{#if ch.canon === 'expansion'} · <span class="exp-mark">EXP</span>{/if}</div>
     <h1>{ch.title}</h1>
     <div class="prose big"><Markdown text={ch.summary || '_No summary yet._'} /></div>
+    {/if}
 
     <div class="label">{T.onStage}</div>
     <div class="cast">
@@ -40,7 +51,7 @@
   {/if}
   <div class="pager">
     <button class="btn big" onclick={() => store.move(-1)} disabled={store.idx <= 0}>◀ Previous</button>
-    <button class="btn big primary" onclick={() => store.move(1)} disabled={store.idx >= store.sequence.length - 1}>Next chapter ▶</button>
+    <button class="btn big primary" onclick={() => store.move(1)} disabled={store.idx >= store.sequence.length - 1}>{ch?.timeStep ? 'Next date' : 'Next chapter'} ▶</button>
   </div>
 </div>
 
@@ -52,6 +63,8 @@
   .who { background: none; border: 0; display: grid; justify-items: center; gap: .3rem; width: 96px; padding: .3rem; border-radius: 10px; }
   .who:hover { background: var(--paper-2); }
   .n { font-weight: 600; }
+  .fact { margin: .2rem 0; display: flex; gap: .4rem; flex-wrap: wrap; align-items: baseline; }
+  .fact :global(.prose p) { margin: 0; }
   .chg { margin: .2rem 0; font-size: 1.05rem; }
   .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; }
   .pager { display: flex; justify-content: space-between; margin-top: 1rem; }

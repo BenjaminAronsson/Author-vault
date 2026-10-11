@@ -6,7 +6,8 @@ import { join, dirname } from 'node:path';
 import { load } from 'js-yaml';
 import { parseWorld } from '../parser/parse.js';
 import { setField, setRaw } from '../lib/frontmatter.js';
-import { appendToSection, appendToSubsection, upsertTableRow, stripPlaceholders, norm } from './md.js';
+import { appendToSection, appendToSubsection, upsertTableRow, stripPlaceholders, norm, sectionRange } from './md.js';
+import { compareDates, compareDateClaims } from '../lib/dates.js';
 
 export const TYPE_DIR = {
   character: 'Characters', location: 'Places', place: 'Places', faction: 'Factions', item: 'Items', concept: 'Concepts',
@@ -23,6 +24,12 @@ const HEADERS = {
 export const canonName = (s) => String(s).replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
 const safeName = (s) => canonName(s).replace(/[\\/:*?"<>|#^[\]]/g, '').trim();
 const link = (n) => `[[${canonName(n)}]]`;
+/** Timeline marker for facts without a date in a genealogy world. */
+export const UNDATED = 'odaterat';
+const DATE_FIELDS = new Set(['born', 'died', 'date', 'in_world']);
+export const isGenealogy = (world) => world.model.entities.World?.fm?.kind === 'genealogy';
+/** Kinship as frontmatter link lists (both sides) — SCHEMA › Archive & kinship. */
+const KIN_FM = { parent: ['parents', 'children'], spouse: ['spouses', 'spouses'], sibling: ['siblings', 'siblings'] };
 const quoteNorm = (s) => String(s).replace(/[“”«»„"]/g, '"').replace(/[‘’`]/g, "'").replace(/[—–]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
 
 export function readWorld(dir) {
@@ -106,6 +113,36 @@ export class World {
   edit(rel, fn) { const lines = this.read(rel).split('\n'); const before = lines.join('\n'); fn(lines); const after = lines.join('\n'); if (after !== before) this.write(rel, after); }
 }
 
+const frontmatter = (text) => { const m = /^---\n([\s\S]*?)\n---/.exec(text); try { return (m && load(m[1])) || {}; } catch { return {}; } };
+
+/** Genealogy: keep a note's Timeline in date order as sources arrive in any order ("odaterat" first, stable). */
+export function sortTimelineByDate(lines) {
+  const r = sectionRange(lines, 'Timeline');
+  if (!r) return;
+  const idx = [];
+  for (let k = r[0]; k < r[1]; k++) if (/^- \*\*/.test(lines[k])) idx.push(k);
+  const marker = (l) => /^- \*\*(.+?)\*\*/.exec(l)[1];
+  const cur = idx.map((k) => lines[k]);
+  const sorted = cur.map((l, i) => [l, i]).sort(([a, i], [b, j]) => {
+    const ma = marker(a), mb = marker(b);
+    if (ma === mb) return i - j;
+    if (ma === UNDATED) return -1;
+    if (mb === UNDATED) return 1;
+    return compareDates(ma, mb) || i - j;
+  }).map(([l]) => l);
+  idx.forEach((k, i) => { lines[k] = sorted[i]; });
+}
+
+/** Adds "[[name]]" to a frontmatter link list (deduped). */
+function addLinkList(world, rel, key, name) {
+  const text = world.read(rel);
+  const cur = frontmatter(text)[key];
+  const list = (Array.isArray(cur) ? cur : cur ? [cur] : []).map(String);
+  const target = world.find(name);
+  if (list.some((x) => { const n = x.replace(/^\[\[|\]\]$/g, '').split('|')[0]; return n.toLowerCase() === canonName(name).toLowerCase() || (target && world.find(n) === target); })) return;
+  world.write(rel, setRaw(text, key, `[${[...list, link(name)].map((x) => JSON.stringify(x)).join(', ')}]`));
+}
+
 /** Voice file and memories folder for any note: Characters/<N>/voice.md, or "<dir>/<N> - voice.md" for e.g. a talking creature. */
 export function speakerPaths(rel) {
   const parts = rel.split('/');
@@ -115,15 +152,21 @@ export function speakerPaths(rel) {
   return { name: n, voice: `${dir}/${n} - voice.md`, memories: `${dir}/${n} - memories` };
 }
 
-/** "- **B1-C03** · `pov:objective` · `at:[[X]]` · … · text ([[B1-C03]])" — the exact format the parser reads. */
+/**
+ * "- **B1-C03** · `pov:objective` · `at:[[X]]` · … · text ([[B1-C03]])" — the exact format the parser reads.
+ * Genealogy worlds put the in-world date as the marker (`t.date`, as written) and still cite the source: "- **1843-05-12** · … ([[arkiv-C01]])".
+ */
 export function timelineLine(cid, t) {
   const tags = [`\`pov:${t.pov ?? 'objective'}\``];
+  if (t.evidence) tags.push(`\`evidence:${t.evidence}\``);
+  if (t.confidence) tags.push(`\`confidence:${t.confidence}\``);
   if (t.canon && t.canon !== 'book') tags.push(`\`canon:${t.canon}\``);
   if (t.at) tags.push(`\`at:${link(t.at)}\``);
   for (const r of t.rel ?? []) tags.push(`\`rel:${link(r.to)}=${String(r.bond ?? 'tie').replace(/[/`]/g, ' ')}/${Math.max(-2, Math.min(2, Math.round(Number(r.n) || 0)))}\``);
   if (t.status) tags.push(`\`status:${t.status}\``);
   for (const g of t.goal ?? []) tags.push(`\`goal:"${String(g.goal).replace(/"/g, "'")}"=${g.status}\``);
-  return `- **${cid}** · ${tags.join(' · ')} · ${String(t.text ?? '').trim()} (${link(cid)})`;
+  const marker = t.date === undefined ? cid : String(t.date ?? '').trim() || UNDATED;
+  return `- **${marker.replace(/\*/g, '')}** · ${tags.join(' · ')} · ${String(t.text ?? '').trim()} (${link(cid)})`;
 }
 
 /**
@@ -134,7 +177,7 @@ export function timelineLine(cid, t) {
 const TIME_AT = /(?<![\p{L}])(måndag|tisdag|onsdag|torsdag|fredag|lördag|söndag|morgon|morgonen|förmiddag|eftermiddag|kväll|kvällen|natt|natten|midnatt|midsommar|midsommarnatten|dagen|veckan|året|sommaren|vintern|hösten|våren|januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december|monday|tuesday|wednesday|thursday|friday|saturday|sunday|morning|afternoon|evening|night|midnight|midsummer|yesterday|today|tomorrow)(?![\p{L}])/iu;
 
 export function applyPatch(world, patch, opts) {
-  const { cid, story, canon = 'book', source = null } = opts;
+  const { cid, story, canon = 'book', source = null, date: defaultDate = '' } = opts; // date: genealogy default for undated lines (a /become cutoff)
   const report = { created: [], updated: [], rejectedQuotes: [], warnings: [] };
   const typeOf = {};
   for (const e of patch.entities ?? []) typeOf[e.name.toLowerCase()] = e.type;
@@ -146,10 +189,27 @@ export function applyPatch(world, patch, opts) {
     if (t.at && TIME_AT.test(t.at) && !world.find(t.at)) { report.warnings.push(`timeline at "${t.at}" looks like a time, not a place: dropped (put it in the text)`); t.at = null; }
   }
 
+  const genealogy = isGenealogy(world);
   // entities first (types, aliases, fields)
   for (const e of patch.entities ?? []) {
+    const existed = world.find(e.name) ?? (e.aliases ?? []).map((a) => world.find(a)).find(Boolean);
     const rel = world.ensure(e.name, e.type ?? 'character', { cid, canon, aliases: e.aliases ?? [], fields: e.fields ?? {} });
     world.touchFrontmatter(rel, { aliases: e.aliases ?? [], cid });
+    // a later source adds facts (a death date) to a known person: fill empty fields, never overwrite; a different value is a contradiction
+    if (genealogy && existed) for (const [k, v] of Object.entries(e.fields ?? {})) {
+      if (v === '' || v == null) continue;
+      const cur = frontmatter(world.read(rel))[k];
+      if (cur === undefined || cur === '' || cur === null || (Array.isArray(cur) && !cur.length)) world.write(rel, typeof v === 'string' ? setField(world.read(rel), k, v) : setRaw(world.read(rel), k, JSON.stringify(v)));
+      else if (JSON.stringify(cur) === JSON.stringify(v)) continue;
+      else if (DATE_FIELDS.has(k) && ['refines', 'coarser', 'same'].includes(compareDateClaims(cur, v))) {
+        // the same date, said more or less precisely: keep the most precise (the source's own dated line says where it came from)
+        if (compareDateClaims(cur, v) === 'refines') world.write(rel, setField(world.read(rel), k, String(v)));
+      } else {
+        world.edit(rel, (L) => appendToSection(L, 'Contradictions', [`> [!warning] Contradiction · ${k}: "${typeof cur === 'string' ? cur : JSON.stringify(cur)}" (kept) vs "${typeof v === 'string' ? v : JSON.stringify(v)}" (${link(cid)})`]));
+        const w = `${e.name}: ${k} "${cur}" vs "${v}" recorded as a contradiction`;
+        if (!report.warnings.includes(w)) report.warnings.push(w);
+      }
+    }
   }
 
   // chapter note
@@ -167,7 +227,10 @@ export function applyPatch(world, patch, opts) {
     for (const n of [...(c.events ?? [])]) ent(n, 'event');
     const fm = ['---', 'type: chapter', 'world: "[[World]]"', `story: "[[Stories/${story}/Story|${story}]]"`, `when: ${cid.replace(/-(C\d+)$/, '/$1')}`,
       `pov: "${c.pov && (c.characters ?? []).some((x) => canonName(x) === canonName(c.pov)) ? link(c.pov) : String(c.pov ?? '').replace(/"/g, "'")}"`, `canon: ${canon}`, 'continuity: main', `characters: ${list(c.characters)}`, `places: ${list(c.places)}`,
-      `events: ${list(c.events)}`, 'tags: [chapter]', '---'];
+      `events: ${list(c.events)}`,
+      // archive sources (genealogy): what kind of document, how much it weighs, where it is kept, its own date
+      ...[['source_kind', c.source_kind], ['evidence', c.evidence], ['archive_ref', c.archive_ref], ['file', c.file], ['dated', c.dated]].filter(([, v]) => v).map(([k, v]) => `${k}: ${JSON.stringify(String(v))}`),
+      'tags: [chapter]', '---'];
     const body = [`# ${cid} — ${c.title ?? ''}`.trim(), '', '## Summary', String(c.summary ?? '').trim(), '',
       '## Scenes', ...(c.scenes ?? []).map((s, i) => `${i + 1}. ${s}`), '',
       '## Key lines', ...keyLines.map((k) => `> "${k.text}" — ${world.find(k.who) || (c.characters ?? []).some((x) => canonName(x) === canonName(k.who)) ? link(k.who) : k.who}`), '',
@@ -190,8 +253,41 @@ export function applyPatch(world, patch, opts) {
       }
       world.edit(rel, (L) => upsertTableRow(L, 'Relations', HEADERS.Relations, { With: link(r.to), Bond: r.bond, 'What they feel': r.feels ?? '' }, { update: ['What they feel'] }));
     }
-    world.edit(rel, (L) => appendToSection(L, 'Timeline', [timelineLine(cid, { canon, ...t })]));
+    // genealogy: the marker is always a date (or "odaterat"), never the source id
+    world.edit(rel, (L) => appendToSection(L, 'Timeline', [timelineLine(cid, { canon, ...t, ...(genealogy ? { date: t.date || defaultDate } : {}) })]));
+    if (genealogy) world.edit(rel, sortTimelineByDate);
     world.touchFrontmatter(rel, { cid });
+  }
+
+  // kinship: two-sided frontmatter lists + a Relations row on each side
+  // kin = [{ a, b, kind: parent|spouse|sibling|household, role?, back?, detail?, from?, to?, confidence? }]
+  //   parent: a is the parent of b (role "far"/"mor", detail biologisk|adoptiv|foster|styv|okänd)
+  //   household: a lives in b's household (role = what a is: piga|dräng|inhyses…, back = what b is: husbonde…, `at` the farm)
+  //   role = what a is to b, back = what b is to a
+  for (let k of patch.kin ?? []) {
+    if (!k.a || !k.b || !k.kind) { report.warnings.push(`kin needs a, b and kind: ${JSON.stringify(k)}`); continue; }
+    // "a is the child of b" is said both ways by agents: kind child, or kind parent with a child's role. Normalise to parent.
+    const CHILD = /^(son|dotter|barn|child|daughter|fosterson|fosterdotter|styvson|styvdotter)$/i;
+    if (k.kind === 'child' || (k.kind === 'parent' && CHILD.test(k.role ?? ''))) {
+      if (k.kind === 'parent' && !report.warnings.some((w) => w.startsWith(`kin: ${k.a} is`))) report.warnings.push(`kin: ${k.a} is "${k.role}" of ${k.b}: stored as ${k.b} parent of ${k.a}`);
+      k = { ...k, kind: 'parent', a: k.b, b: k.a, role: k.back, back: k.role };
+    }
+    const ra = ent(k.a, 'character'), rb = ent(k.b, 'character');
+    const fmKeys = KIN_FM[k.kind];
+    // link by note name, not by whatever alias the source used ("Anna" → "Anna Persdotter (1843–1910)")
+    const noteName = (rel) => rel.split('/').pop().replace(/\.md$/, '');
+    k = { ...k, a: noteName(ra), b: noteName(rb) };
+    if (fmKeys) { addLinkList(world, rb, fmKeys[0], k.a); addLinkList(world, ra, fmKeys[1], k.b); }
+    const span = [k.from && `från ${k.from}`, k.to && `till ${k.to}`].filter(Boolean).join(' ');
+    const note = [k.detail, span, k.at && `på ${link(k.at)}`, k.confidence].filter(Boolean).join(', ');
+    const DEFAULT = { parent: ['förälder', 'barn'], spouse: ['make/maka', 'make/maka'], sibling: ['syskon', 'syskon'], household: ['hushåll', 'hushåll'] }[k.kind] ?? [k.kind, k.kind];
+    // b's row about a says what a is to b (far), a's row about b says what b is to a (barn)
+    const pre = k.kind === 'household' ? 'hushåll' : 'kin';
+    const bondA = `${pre} · ${k.role ?? DEFAULT[0]}`, bondB = `${pre} · ${k.back ?? DEFAULT[1]}`;
+    if (k.at) ent(k.at, 'location');
+    world.edit(rb, (L) => upsertTableRow(L, 'Relations', HEADERS.Relations, { With: link(k.a), Bond: bondA, 'Changes over time': `${note ? `${note} ` : ''}(${link(cid)})` }));
+    world.edit(ra, (L) => upsertTableRow(L, 'Relations', HEADERS.Relations, { With: link(k.b), Bond: bondB, 'Changes over time': `${note ? `${note} ` : ''}(${link(cid)})` }));
+    world.touchFrontmatter(ra, { cid }); world.touchFrontmatter(rb, { cid });
   }
 
   // table rows (Goals, Fears, Relations, …): add, or update only the listed columns of an existing row
@@ -211,7 +307,7 @@ export function applyPatch(world, patch, opts) {
     }
     const res = world.edit(rel, (L) => upsertTableRow(L, r.section, header, row, { update: r.update ?? (r.section === 'Goals' ? ['Status'] : []) }));
     // a status change is also history: log it on the timeline
-    if (r.section === 'Goals' && row.Status && row.Status !== 'active') world.edit(rel, (L) => appendToSection(L, 'Timeline', [timelineLine(cid, { canon, goal: [{ goal: row.Goal, status: row.Status }], text: `Goal “${row.Goal}”: ${row.Status}.` })]));
+    if (r.section === 'Goals' && row.Status && row.Status !== 'active') world.edit(rel, (L) => appendToSection(L, 'Timeline', [timelineLine(cid, { canon, ...(genealogy ? { date: r.date || defaultDate } : {}), goal: [{ goal: row.Goal, status: row.Status }], text: `Goal “${row.Goal}”: ${row.Status}.` })]));
   }
 
   // list items and paragraphs
@@ -250,7 +346,7 @@ export function applyPatch(world, patch, opts) {
     const { name: n, memories: mdir } = speakerPaths(rel);
     const mrel = `${mdir}/${safeName(`${n} - ${m.event ?? m.title ?? cid}`)}.md`;
     const fm = ['---', 'type: memory', `character: "${link(n)}"`, `event: "${m.event ? link(m.event) : ''}"`, `when: ${cid.replace(/-(C\d+)$/, '/$1')}`,
-      `pov: "${n}"`, `accuracy: ${m.accuracy ?? 'unknown'}`, `emotional_charge: "${m.charge ?? ''}"`, `canon: ${canon}`, 'continuity: main', `sources: ["${link(cid)}"]`, 'tags: [memory]', '---'];
+      ...(m.date ? [`date: ${JSON.stringify(String(m.date))}`] : []), `pov: "${n}"`, `accuracy: ${m.accuracy ?? 'unknown'}`, `emotional_charge: "${m.charge ?? ''}"`, `canon: ${canon}`, 'continuity: main', `sources: ["${link(cid)}"]`, 'tags: [memory]', '---'];
     const text = [...fm, `# ${n} remembers: ${m.event ?? m.title ?? cid}`, '', String(m.text ?? '').trim(), '',
       '## Divergence from objective', String(m.divergence ?? '').trim() || '_None known._', ''].join('\n');
     if (!existsSync(world.path(mrel))) { world.write(mrel, text); world.created.push(mrel); }

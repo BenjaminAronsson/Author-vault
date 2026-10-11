@@ -1,5 +1,6 @@
 // Mechanical continuity checks (no AI). Judgment items go to the continuity-keeper; the rest can be fixed by script.
 import { buildClock, buildSnapshots, introductionIndex } from '../parser/derive.js';
+import { parseDate, yearOf, compareDateClaims } from '../lib/dates.js';
 
 export function lint(model, { touched = null } = {}) {
   const issues = [];
@@ -26,8 +27,8 @@ export function lint(model, { touched = null } = {}) {
     // timeline order
     const steps = e.timeline.filter((t) => t.step && t.step in idx).map((t) => idx[t.step]);
     if (steps.some((s, i) => i && s < steps[i - 1])) add('timeline-order', e.path, 'Timeline lines are out of reading order', false);
-    // essentials
-    for (const s of ['Goals', 'Fears', 'Dreams', 'Relations']) {
+    // essentials (genealogy: people are documented, not written — only Relations is expected)
+    for (const s of model.genealogy ? ['Relations'] : ['Goals', 'Fears', 'Dreams', 'Relations']) {
       const empty = s === 'Goals' ? !(e.goals ?? []).length : s === 'Fears' ? !(e.fears ?? []).length : s === 'Dreams' ? !(e.dreams ?? []).length : !(e.relationsTable ?? []).length;
       const minor = (e.timeline ?? []).length < 3;
       if (empty && !minor) add('missing-essential', e.path, `${s} is empty`, true);
@@ -39,7 +40,9 @@ export function lint(model, { touched = null } = {}) {
     }
     // acting after death
     const deathAt = e.timeline.find((t) => /dead/.test(t.tags.status ?? '') && t.step in idx);
-    if (deathAt) for (const t of e.timeline) if (t.step in idx && idx[t.step] > idx[deathAt.step] && (t.canon ?? e.canon) === 'book' && !/flashback|memory|remember|ghost|portrait/i.test(t.text)) add('after-death', e.path, `${t.marker}: active after dying at ${deathAt.marker}`, true);
+    if (deathAt) for (const t of e.timeline) if (t.step in idx && idx[t.step] > idx[deathAt.step] && (t.canon ?? e.canon) === 'book' && !/flashback|memory|remember|ghost|portrait|begrav|jordf|bouppteck|dödsbo|arvskifte|minne/i.test(t.text)
+      && !(model.genealogy && compareDateClaims(deathAt.marker, t.marker) !== 'conflict')) // not the same death, dated more precisely by another source
+      add('after-death', e.path, `${t.marker}: active after dying at ${deathAt.marker}`, true);
   }
   // timeline lines before the entity is introduced (first_seen later than a dated line)
   for (const e of ents) {
@@ -49,6 +52,48 @@ export function lint(model, { touched = null } = {}) {
   }
   // voice quotes without a source
   for (const e of ents) for (const m of e.voice?.moods ?? []) for (const q of m.quotes) if (!q.source) add('quote-without-source', e.voice.entity + '.md', `"${q.text.slice(0, 50)}…" has no chapter link`, false);
+  if (model.genealogy) genealogyChecks(model, ents, add);
   void intro; void buildSnapshots;
   return { issues, judgment: issues.filter((i) => i.judgment), mechanical: issues.filter((i) => !i.judgment) };
+}
+
+/** Kinship and identity checks for genealogy worlds (SCHEMA › Archive & kinship). */
+function genealogyChecks(model, ents, add) {
+  const people = ents.filter((e) => e.type === 'character');
+  const year = (v) => yearOf(parseDate(v));
+  const now = new Date().getFullYear();
+  for (const e of people) {
+    const b = year(e.born), d = year(e.died);
+    if (b && d && d < b) add('died-before-born', e.path, `died ${e.died} before born ${e.born}`, true);
+    for (const pid of e.kin?.parents ?? []) {
+      const p = model.entities[pid];
+      const pb = year(p?.born), pd = year(p?.died);
+      if (b && pb && b - pb < 12) add('parent-age', e.path, `${p.title} (born ${p.born}) is ${b - pb} years older than ${e.title} (born ${e.born})`, true);
+      if (b && pd && b > pd + 1) add('born-after-parent-death', e.path, `born ${e.born}, but parent ${p.title} died ${p.died}`, true);
+      if (!(p?.kin?.children ?? []).includes(e.id)) add('one-sided-kin', p?.path ?? e.path, `${e.title} lists ${p?.title ?? pid} as parent, but not the other way round`, false);
+    }
+    for (const k of ['spouses', 'siblings']) for (const oid of e.kin?.[k] ?? []) {
+      const o = model.entities[oid];
+      if (o && !(o.kin?.[k] ?? []).includes(e.id)) add('one-sided-kin', o.path, `${e.title} lists ${o.title} in ${k}, but not the other way round`, false);
+    }
+    if (!d && !e.living && b && now - b < 110 && !/dead|död/.test(e.status ?? '')) add('maybe-living', e.path, `born ${e.born}, no death recorded: set living: true (hidden in the viewer) or add the death`, false);
+    if (e.sections.Contradictions?.text?.trim()) add('contradiction', e.path, 'has open contradictions between sources: attribute or keep both', true);
+  }
+  // possible duplicates: same name without the "(1843–1910)" years, and lifespans that could overlap. Never merged automatically.
+  const base = (s) => String(s).replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase();
+  const byName = {};
+  for (const e of people) for (const n of new Set([e.title, ...(e.aliases ?? [])].map(base))) (byName[n] ??= new Set()).add(e);
+  const seen = new Set();
+  for (const [n, set] of Object.entries(byName)) {
+    const xs = [...set];
+    for (let i = 0; i < xs.length; i++) for (let j = i + 1; j < xs.length; j++) {
+      const [a, c] = [xs[i], xs[j]];
+      const key = [a.id, c.id].sort().join('|');
+      if (seen.has(key)) continue;
+      const ba = year(a.born), bc = year(c.born);
+      if (ba && bc && Math.abs(ba - bc) > 2) continue; // namesakes a generation apart
+      seen.add(key);
+      add('possible-duplicate', a.path, `"${n}": ${a.title} and ${c.title} may be the same person (suggest, don't merge)`, true);
+    }
+  }
 }

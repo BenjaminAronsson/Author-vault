@@ -33,7 +33,7 @@
       <h1>{store.chapter?.title}</h1>
       {#each recap as c, i (c.id)}
         <article class:current={i === recap.length - 1} class:exp={c.canon === 'expansion'}>
-          <h3><button class="link" onclick={() => store.open(c.entity)}>{c.id} — {c.title}</button>
+          <h3><button class="link" onclick={() => store.open(c.entity)}>{c.id === c.title ? c.id : `${c.id} — ${c.title}`}</button>
             {#if c.canon === 'expansion'}<span class="exp-mark">EXP</span>{/if}
             {#if c.pov}<span class="chip">POV {store.name(c.pov)}</span>{/if}</h3>
           <Markdown text={c.summary || '_No summary yet._'} />

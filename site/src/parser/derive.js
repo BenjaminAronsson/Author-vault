@@ -21,7 +21,7 @@ export function placementAnchor(placement) {
 /** Reading order per continuity: { main: [chapterIds], 'what-if-x': [...] } plus fork info. */
 export function buildClock(model, canonFilter = null) {
   const allowed = (canon) => !canonFilter || canonFilter.has(canon ?? 'book');
-  const stories = Object.values(model.stories).filter((s) => allowed(s.canon));
+  const stories = Object.values(model.stories).filter((s) => allowed(s.canon) && !s.archive); // archive sources are citations, not steps
   const main = stories.filter((s) => s.continuity === 'main');
   const base = main.filter((s) => !placementAnchor(s.placement)).sort((a, b) => a.order - b.order);
   const baseIds = new Set(base.map((s) => s.id));
@@ -147,7 +147,7 @@ export function introductionIndex(model, sequence) {
   }
   const out = {};
   for (const e of Object.values(model.entities)) {
-    const dated = e.firstSeen || (e.timeline ?? []).some((t) => t.step) || e.type === 'chapter' || e.openedAt;
+    const dated = e.firstSeen || (e.timeline ?? []).some((t) => t.step) || (e.type === 'chapter' && !model.chapters[e.chapterId]?.archive) || e.openedAt;
     out[e.id] = first[e.id] ?? (dated ? Infinity : -1);
   }
   return out;

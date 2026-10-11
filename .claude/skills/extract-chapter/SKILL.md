@@ -41,6 +41,17 @@ Use `P=book-universe/<World>/.vault/patches` and `mkdir -p "$P"`.
    ```
 7. **Tell the user one line:** `<cid> ✓ <agent A line> · <agent B line>`. Keep your own conversation small: don't read the patches or notes.
 
+## 2b. Genealogy worlds (story `arkiv`)
+If the story is `arkiv` (the world's `World.md` has `kind: genealogy`), each "chapter" is one research file and **one agent** does the work.
+
+For each `Cxx`:
+1. `node tools/vault.mjs context "<World>" arkiv Cxx --for characters > "$P/<cid>-ctx.md"`
+2. Run the **genealogist** agent with the world, `<cid>`, the source path, the context pack, and the patch path `$P/<cid>.json`.
+3. `node tools/vault.mjs apply "<World>" "$P/<cid>.json" --chapter <cid>`. Report any `contradiction` warnings to the user: two sources disagree, and both are kept.
+4. `node tools/vault.mjs done "<World>" arkiv Cxx "<the agent's line>"`, then tell the user that line.
+
+Order matters less than in a book. Files can be extracted in any order, and new files added later get the next numbers.
+
 ## 3. After the range (or at the end of each book)
 1. **Check continuity:** `node tools/vault.mjs lint "<World>"`.
 2. **Judgment items:** only if there are any, run **continuity-keeper** once with the judgment list. Mechanical items are listed for the author; they're not worth tokens.

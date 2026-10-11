@@ -1,7 +1,8 @@
 // All UI text in one place (the notes themselves stay in the book's language).
 export const T = {
   appName: 'World Viewer',
-  nav: { home: 'Home', timeline: 'Timeline', people: 'People', places: 'Places & History', reader: 'Reader' },
+  nav: { home: 'Home', timeline: 'Timeline', people: 'People', family: 'Family', places: 'Places & History', reader: 'Reader' },
+  navGenealogy: { reader: 'On this date' },
   chooseWorld: 'Choose a world',
   tryDemo: 'Try the Sample world',
   openFolder: 'Open world folder…',

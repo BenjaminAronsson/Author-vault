@@ -22,6 +22,12 @@ export function mentioned(model, text) {
 
 function digest(model, e, { full }) {
   const out = [`### ${e.title} (${e.type})${e.aliases?.length ? ` · aka ${e.aliases.join(', ')}` : ''}`];
+  if (e.type === 'character' && e.kin) {
+    // genealogy: identity facts first, so the agent can tell namesakes apart
+    const t = (ids) => ids.map((id) => model.entities[id]?.title).filter(Boolean).join(', ');
+    const facts = [e.born && `född ${e.born}`, e.died && `död ${e.died}`, e.kin.parents.length && `föräldrar: ${t(e.kin.parents)}`, e.kin.spouses.length && `make/maka: ${t(e.kin.spouses)}`, e.kin.children.length && `barn: ${t(e.kin.children)}`, e.living && 'living'].filter(Boolean);
+    if (facts.length) out.push(`- ${facts.join(' · ')}`);
+  }
   if (e.type === 'character') {
     if (e.fm?.status && e.fm.status !== 'alive') out.push(`- status: ${e.fm.status}`);
     const goals = (e.goals ?? []).filter((g) => g.goal);
@@ -49,11 +55,18 @@ function digest(model, e, { full }) {
  */
 export function contextPack(model, { cid, sourcePath, sourceText, forWho = 'characters', prevCid = null }) {
   const hits = mentioned(model, sourceText);
+  if (model.genealogy) {
+    // genealogy: sources mention people by name only, so known people with similar names are always listed
+    const people = Object.values(model.entities).filter((e) => e.type === 'character');
+    const first = (n) => String(n).replace(/\s*\(.*$/, '').split(/\s+/)[0]?.toLowerCase();
+    const words = new Set(sourceText.toLowerCase().match(/[\p{L}-]+/gu) ?? []);
+    for (const p of people) if ([p.title, ...(p.aliases ?? [])].some((n) => words.has(first(n)))) hits.push({ id: p.id, count: 0 });
+  }
   const prev = prevCid && model.chapters[prevCid] ? model.chapters[prevCid].characters : [];
   const ids = [...new Set([...hits.map((h) => h.id), ...prev])].filter((id) => model.entities[id]);
   const chars = ids.filter((id) => model.entities[id].type === 'character');
   const others = ids.filter((id) => model.entities[id].type !== 'character');
-  const lines = [`# Context for ${cid}`, `Source chapter: ${sourcePath}`, `World: ${model.world} (use this exact name as the entity for world-wide rules)`, ''];
+  const lines = [`# Context for ${cid}`, `Source ${model.genealogy ? 'file' : 'chapter'}: ${sourcePath}`, `World: ${model.world} (use this exact name as the entity for world-wide rules)`, ''];
   if (!ids.length) lines.push('_No existing notes match this chapter yet. Everything you find is new._', '');
   if (forWho === 'characters') {
     if (chars.length) lines.push('## Known characters in or around this chapter', ...chars.slice(0, 40).map((id) => digest(model, model.entities[id], { full: true })), '');

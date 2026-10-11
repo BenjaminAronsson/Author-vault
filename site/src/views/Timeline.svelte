@@ -120,7 +120,7 @@
           <g class="chap" class:cur={i === store.idx} class:fut={hidden(i)} class:read={i <= store.idx} class:picked={cid === picked} role="button" tabindex="0"
             aria-label={hidden(i) ? 'Chapter after your bookmark' : `${cid} ${c.title}`} onclick={() => (picked = cid)} onkeydown={(ev) => ev.key === 'Enter' && (picked = cid)}>
             <rect x={x(i) + 2} y={TOP + (side ? LANE : 0) + 6} width={COL - 4} height="30" rx="4" fill={c.canon === 'expansion' ? 'url(#hatch)' : null} />
-            {#if !hidden(i) || store.future === 'dim'}<text x={x(i) + COL / 2} y={TOP + (side ? LANE : 0) + 25} text-anchor="middle" class="cn">{side ? '·' : c.num}</text>
+            {#if !hidden(i) || store.future === 'dim'}<text x={x(i) + COL / 2} y={TOP + (side ? LANE : 0) + 25} text-anchor="middle" class="cn">{side ? '·' : c.timeStep ? (c.date?.year ?? '–') : c.num}</text>
               {#each c.events.slice(0, 3) as ev, e (ev)}<circle cx={x(i) + COL / 2 - 6 + e * 6} cy={TOP + (side ? LANE : 0) + 2} r="2.6" class="evt"><title>{store.name(ev)}</title></circle>{/each}
               <title>{cid} · {c.title}{c.pov ? ` · POV ${store.name(c.pov)}` : ''}</title>{/if}
           </g>
@@ -163,11 +163,11 @@
         <p class="muted">This chapter is after where you've read to. <button class="btn" onclick={() => store.setAt(pc.id)}>I've read up to here</button></p>
       {:else}
         <div class="row">
-          <h2>Chapter {pc.num} — {pc.title}</h2>
+          <h2>{pc.timeStep ? pc.title : `Chapter ${pc.num} — ${pc.title}`}</h2>
           {#if pc.canon === 'expansion'}<span class="exp-mark">EXP</span>{/if}
           <span class="sp"></span>
           {#if pi !== store.idx}<button class="btn primary" onclick={() => store.setAt(pc.id)}>I've read up to here</button>{:else}<span class="chip">you are here</span>{/if}
-          <button class="btn" onclick={() => store.open(pc.entity)}>Open chapter</button>
+          {#if pc.entity}<button class="btn" onclick={() => store.open(pc.entity)}>Open chapter</button>{/if}
         </div>
         <Markdown text={pc.summary} />
         <div class="small">

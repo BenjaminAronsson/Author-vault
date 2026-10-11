@@ -17,6 +17,7 @@ class Store {
   cont = $state('main');
   canon = $state([...CANONS]);
   future = $state('hide'); // hide | dim
+  showLiving = $state(false); // genealogy: people marked living: true stay hidden unless asked for
   searchOpen = $state(false);
   coverageOpen = $state(false);
   pending = $state([]); // images waiting to be saved to the vault
@@ -68,6 +69,7 @@ class Store {
   visible(id) {
     const e = this.model?.entities[id];
     if (!e || !this.canonSet.has(e.canon ?? 'book')) return false;
+    if (e.living && !this.showLiving) return false;
     if (e.continuity && e.continuity !== 'main' && e.continuity !== this.cont) return false;
     const i = this.intro[id];
     return i === -1 || i <= this.idx || (this.future === 'dim' && i !== Infinity);
@@ -154,11 +156,12 @@ export function readHash(s = store) {
     view: h.get('view') ?? 'home', sel: h.get('sel'), at: h.get('at'), cont: h.get('cont') ?? 'main', follow: h.get('follow'),
     canon: h.get('canon') ? h.get('canon').split(',').filter((c) => CANONS.includes(c)) : [...CANONS],
     future: h.get('future') === 'dim' ? 'dim' : 'hide',
+    living: h.get('living') === 'show',
   };
 }
 export function applyHash(s = store) {
   const h = readHash(s);
-  s.view = h.view; s.sel = h.sel; s.cont = h.cont; s.follow = h.follow; s.canon = h.canon.length ? h.canon : [...CANONS]; s.future = h.future;
+  s.view = h.view; s.sel = h.sel; s.cont = h.cont; s.follow = h.follow; s.canon = h.canon.length ? h.canon : [...CANONS]; s.future = h.future; s.showLiving = h.living;
   s.at = h.at ?? (s.model ? localStorage.getItem(`bookmark:${s.model.world}`) : null);
 }
 let writing = false;
@@ -173,6 +176,7 @@ export function writeHash(s = store, push = false) {
   if (s.follow) h.set('follow', s.follow);
   if (s.canon.length !== CANONS.length) h.set('canon', s.canon.join(','));
   if (s.future === 'dim') h.set('future', 'dim');
+  if (s.showLiving) h.set('living', 'show');
   const url = `#${h.toString()}`;
   if (url === location.hash) return;
   writing = true;

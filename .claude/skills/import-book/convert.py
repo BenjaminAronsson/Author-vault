@@ -80,6 +80,29 @@ def epub_text(p):
     return "\n\n".join(parts)
 
 
+def read_txt(p):
+    """Old Swedish .txt files are often cp1252/latin-1, not UTF-8."""
+    b = p.read_bytes()
+    try:
+        return b.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return b.decode("cp1252", errors="replace")
+
+
+def docx_text(p):
+    """Paragraphs of a .docx (word/document.xml), headings as markdown, table rows as "a | b". Stdlib only."""
+    xml = zipfile.ZipFile(p).read("word/document.xml").decode("utf-8", "ignore")
+    xml = re.sub(r"<w:(?:br|cr)\b[^>]*/>", "<w:t>\n</w:t>", xml).replace("<w:tab/>", "<w:t>\t</w:t>")
+    xml = re.sub(r"</w:tc>\s*<w:tc>", "<w:p><w:r><w:t> | </w:t></w:r></w:p>", xml)  # cells of a row on one line
+    out = []
+    for para in re.findall(r"<w:p[ >].*?</w:p>|<w:tr[ >].*?</w:tr>", xml, re.S):
+        style = re.search(r'<w:pStyle w:val="([^"]+)"', para)
+        text = "".join(html.unescape(t) for t in re.findall(r"<w:t(?: [^>]*)?>(.*?)</w:t>", para, re.S))
+        lvl = re.match(r"(?:Heading|Rubrik)(\d)", style.group(1)) if style else None
+        out.append(("#" * int(lvl.group(1)) + " " + text) if lvl and text.strip() else text)
+    return "\n\n".join(out)
+
+
 def pdf_text(p):
     return subprocess.run(["pdftotext", "-layout", str(p), "-"], capture_output=True, text=True, check=True).stdout
 
@@ -163,14 +186,18 @@ def main():
     ap.add_argument("book"); ap.add_argument("out")
     ap.add_argument("--pattern", default=DEFAULT_PATTERN)
     ap.add_argument("--books", choices=["auto", "off"], default="auto")
+    ap.add_argument("--whole", action="store_true", help="no chapter split: write the cleaned text to <out>/_full.md only (archive files)")
     a = ap.parse_args()
     src, out = Path(a.book), Path(a.out)
     ext = src.suffix.lower()
-    text = (epub_text(src) if ext == ".epub" else pdf_text(src) if ext == ".pdf"
-            else src.read_text(encoding="utf-8", errors="ignore"))
+    text = (epub_text(src) if ext == ".epub" else pdf_text(src) if ext == ".pdf" else docx_text(src) if ext == ".docx"
+            else src.read_bytes().decode("utf-8", errors="ignore") if ext != ".txt" else read_txt(src))
     text = clean(text)
     out.mkdir(parents=True, exist_ok=True)
     (out / "_full.md").write_text(text, encoding="utf-8")
+    if a.whole:
+        print(f"{len(text.split()):,} words -> {out / '_full.md'}", file=sys.stderr)
+        return
 
     lines = text.splitlines()
     front, chapters = split_chapters(lines, re.compile(a.pattern, re.I))
