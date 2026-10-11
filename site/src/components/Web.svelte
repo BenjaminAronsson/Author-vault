@@ -10,8 +10,11 @@
   let { focus = null, hops = 1, mode = 'ego', height = 420, onpick = null, recent = null, max = null } = $props();
 
   const rel = $derived((store.version, relationsAt(store)));
+  // the focus counts only if it is a visible character (a hidden, filtered or non-person focus has no place in the web)
+  const me = $derived(focus && rel.chars?.includes(focus) ? focus : null);
   const shown = $derived.by(() => {
-    if (mode === 'full' || !focus) return new Set(rel.chars);
+    const focus = me;
+    if (mode === 'full' || !focus) return new Set(rel.chars ?? []);
     const adj = {};
     for (const p of rel.pairs) { (adj[p.a] ??= new Set()).add(p.b); (adj[p.b] ??= new Set()).add(p.a); }
     const seen = new Set([focus]);
@@ -69,14 +72,15 @@
     return out;
   });
   const P = (id) => (rpos ? rpos[id] : pos[id]);
-  const targets = $derived(Object.fromEntries([...kept].map((id) => [id, P(id)])));
+  // only people the layout placed (a missing position would break the tween and the view box)
+  const targets = $derived(Object.fromEntries([...kept].map((id) => [id, P(id)]).filter(([, p]) => p && Number.isFinite(p.x) && Number.isFinite(p.y))));
   // Glide between layouts instead of jumping (new people fade in from the focus / centre)
   const tw = new PosTween();
   $effect(() => { const t = targets; const ms = store.animMs; untrack(() => tw.to(t, ms, () => (focus && t[focus] ? t[focus] : { x: 0, y: 0 }))); });
   const T = (id) => tw.current[id] ?? targets[id];
-  const nodes = $derived([...kept].map((id) => ({ id, ...T(id) })));
+  const nodes = $derived([...kept].filter((id) => id in targets).map((id) => ({ id, ...T(id) })));
   const rad = (id) => (big ? 16 + Math.min(12, (activity[id] ?? 0) * 2) : R);
-  const edges = $derived(rel.pairs.filter((p) => kept.has(p.a) && kept.has(p.b)).map((p) => ({
+  const edges = $derived(rel.pairs.filter((p) => p.a in targets && p.b in targets).map((p) => ({
     ...p, ab: rel.directed[`${p.a}>${p.b}`] ?? null, ba: rel.directed[`${p.b}>${p.a}`] ?? null,
   })));
   const boxTarget = $derived.by(() => {
@@ -110,7 +114,7 @@
       {#each nodes as n (n.id)}<clipPath id={`c-${n.id.replace(/\W/g, '_')}`}><circle cx={n.x} cy={n.y} r={rad(n.id)} /></clipPath>{/each}
     </defs>
     <g class="edges">
-      {#each edges as e (e.a + e.b)}
+      {#each edges as e (`${e.a}|${e.b}`)}
         {@const A = T(e.a)} {@const B = T(e.b)} {@const mx = (A.x + B.x) / 2} {@const my = (A.y + B.y) / 2}
         <g in:fade={{ duration: 350 }} class:table={(e.ab?.src ?? e.ba?.src) === 'table'} class:side={radial && e.a !== focus && e.b !== focus}>
           {#if kindOf(e)}

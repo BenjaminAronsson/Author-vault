@@ -36,13 +36,14 @@
   async function saveTag() {
     if (!who) return;
     const m = store.model.entities[open.id];
-    const r = await tag(m, who, box);
+    let r;
+    try { r = await tag(m, who, box); } catch (err) { msg = `Couldn't save the tag: ${err.message}`; return; }
     msg = r.saved ? `Tagged ${store.name(who)}.` : `Tagged ${store.name(who)}. Not saved to the vault yet (see the banner).`;
     open = m; box = null; who = '';
   }
   async function removeTag(d) {
     const m = store.model.entities[open.id];
-    await untag(m, d);
+    try { await untag(m, d); } catch (err) { msg = `Couldn't remove the tag: ${err.message}`; return; }
     open = m; msg = `Removed ${store.name(d)}.`;
   }
 
@@ -86,7 +87,7 @@
       <div class="pic" class:tagging bind:this={pic} onpointerdown={bdown} onpointermove={bmove} onpointerup={bup}>
         <img src={full(open.image)} alt={open.caption || open.title || ''} draggable="false" />
         {#if box}<span class="region new" style:left={`${box.x * 100}%`} style:top={`${box.y * 100}%`} style:width={`${box.w * 100}%`} style:height={`${box.h * 100}%`}></span>{/if}
-        {#key store.version}{#each open.regions ?? [] as r (r.who)}
+        {#key store.version}{#each open.regions ?? [] as r, ri (ri)}
           <span class="region" style:left={`${r.x * 100}%`} style:top={`${r.y * 100}%`} style:width={`${r.w * 100}%`} style:height={`${r.h * 100}%`}><span>{store.name(r.who)}</span></span>
         {/each}{/key}
       </div>

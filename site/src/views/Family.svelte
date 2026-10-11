@@ -6,14 +6,16 @@
   import { lifeLine as lifespan } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
   import { STYLES } from '../lib/familyLayout.js';
+  import { load, save } from '../lib/storage.js';
 
   const people = $derived(Object.values(store.model.entities).filter((e) => e.type === 'character' && store.visible(e.id))
     .sort((a, b) => a.title.localeCompare(b.title, 'sv')));
   const oldest = $derived([...people].sort((a, b) => (parseDate(a.born)?.sort ?? Infinity) - (parseDate(b.born)?.sort ?? Infinity))[0]?.id ?? null);
   const focus = $derived([store.sel, store.follow].find((id) => id && store.model.entities[id]?.type === 'character' && store.visible(id)) ?? oldest);
   let up = $state(2), down = $state(2);
-  let style = $state((typeof localStorage !== 'undefined' && localStorage.getItem('familyStyle')) || 'tree');
-  $effect(() => { try { localStorage.setItem('familyStyle', style); } catch {} });
+  // remembered layout, if it is still one we have
+  let style = $state(load('familyStyle') in STYLES ? load('familyStyle') : 'tree');
+  $effect(() => save('familyStyle', style));
   // the tree gets the rest of the screen: from where its card starts down to the time scrubber
   let winH = $state(typeof window !== 'undefined' ? window.innerHeight : 800);
   let card = $state(null), top = $state(200), below = $state(150);

@@ -43,6 +43,8 @@ export function buildClock(model, canonFilter = null) {
     sequences[s.continuity] = [...prev, ...s.chapters];
     forks[s.continuity] ??= { at: anchor, story: s.id };
   }
+  // every step is a chapter the model has (callers index model.chapters[cid] without checking)
+  for (const k in sequences) sequences[k] = sequences[k].filter((cid) => model.chapters[cid]);
   return { sequences, forks, continuities: Object.keys(sequences) };
 }
 

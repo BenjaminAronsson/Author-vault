@@ -81,7 +81,7 @@
     </div>
     <div class="card">
       <div class="label">{T.relChanged}</div>
-      {#each changes as r (r.from + r.to + r.at)}
+      {#each changes as r, ri (ri)}
         <div class="chg small">
           <EntityLink id={r.from} /> → <EntityLink id={r.to} />
           <span class="sw" style:background={colorOf(r.n)}></span> {r.bond} {r.n > 0 ? '+' : ''}{r.n}

@@ -79,3 +79,23 @@ describe('fan chart and folding', () => {
     expect(Object.keys(folded.gen).length).toBeLessThan(Object.keys(full.gen).length);
   });
 });
+
+describe('the tree grows with time, and +N opens past the limit', () => {
+  const deep = people.find((p) => familyTree(m, idx, p, { up: 0, down: 6 }).rows.length > 3);
+  it('opening someone at the edge shows their next generation, one at a time', () => {
+    const t1 = familyTree(m, idx, deep, { up: 0, down: 1 });
+    const edge = t1.rows.find((r) => r.gen === 1).ids.find((id) => [...(idx.children.get(id) ?? [])].length);
+    expect(edge).toBeTruthy();
+    const t2 = familyTree(m, idx, deep, { up: 0, down: 1, more: new Set([edge]) });
+    const kids = [...idx.children.get(edge)];
+    for (const k of kids) expect(t2.gen[k]).toBe(2);
+    // and only that branch: nobody at generation 3
+    expect(Object.values(t2.gen).some((g) => g > 2)).toBe(false);
+  });
+  it('a marriage that is not a fact yet seats no spouse and draws no ring', () => {
+    const couple = Object.entries(familyTree(m, idx, deep, { up: 0, down: 2 }).gen).find(([id]) => [...(idx.spouses.get(id) ?? [])].length)?.[0];
+    const t = familyTree(m, idx, couple, { up: 0, down: 0, tie: () => false });
+    expect(Object.keys(t.gen)).toEqual([couple]);
+    expect(t.spouses).toEqual([]);
+  });
+});

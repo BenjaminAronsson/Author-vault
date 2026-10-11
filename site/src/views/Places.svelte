@@ -119,7 +119,7 @@
       </section>
       <section class="card">
         <div class="label">Journeys {tspan === 'book' ? 'in this book' : tspan === 'recent' ? 'in the last 15 chapters' : 'so far'}</div>
-        {#each (allMoves ? moves : [...moves].sort((a, b) => b.who.length - a.who.length).slice(0, 40)) as m (m.a + m.b)}
+        {#each (allMoves ? moves : [...moves].sort((a, b) => b.who.length - a.who.length).slice(0, 40)) as m, mi (mi)}
           <div class="move small"><EntityLink id={m.a} /> ⇄ <EntityLink id={m.b} />
             <span class="here">{#each m.who.slice(0, 5) as w (w)}<span title={store.name(w)}><Avatar id={w} size={20} /></span>{/each}
         {#if moves.length > 40}<button class="link small" onclick={() => (allMoves = !allMoves)}>{allMoves ? 'Show the 40 busiest' : `Show all ${moves.length} journeys`}</button>{/if}{#if m.who.length > 5}<span class="more">+{m.who.length - 5}</span>{/if}</span></div>
@@ -140,7 +140,7 @@
               <text x={X(b.a) + 6} y={35 + (i % 2) * 26} class="bl">{b.e.title}</text>
             </g>
           {/each}
-          {#each points as p, i (p.label + p.y)}
+          {#each points as p, i (i)}
             <g class="pt" role="button" tabindex="0" onclick={() => p.id && store.open(p.id)} onkeydown={(ev) => ev.key === 'Enter' && p.id && store.open(p.id)}>
               <circle cx={X(p.y)} cy="100" r="6" />
               <text x={X(p.y)} y={i % 2 ? 132 : 122} text-anchor="middle" class="pl">{p.label}</text>
@@ -166,7 +166,7 @@
           <div class="chr"><span class="yr">{ev.fm.in_world}</span><EntityLink id={ev.id} />{#if ev.fm.era}<span class="small muted"> · {wikilinks(ev.fm.era)[0]}</span>{/if}</div>
         {/each}
         {#each chronoLines as t, i (i)}
-          <div class="chr"><span class="yr">{t.marker}</span><span>{#each t.links.filter((l) => !plain(t).includes(l)) as l, k (l)}{#if k}{', '}{/if}<EntityLink id={store.model.nameIndex[l.toLowerCase()]} label={l} />{' · '}{/each}{plain(t)}</span></div>
+          <div class="chr"><span class="yr">{t.marker}</span><span>{#each t.links.filter((l) => !plain(t).includes(l)) as l, k (k)}{#if k}{', '}{/if}<EntityLink id={store.model.nameIndex[l.toLowerCase()]} label={l} />{' · '}{/each}{plain(t)}</span></div>
         {/each}
         {#if !dated.length && !chronoLines.length}<p class="muted small">Nothing dated yet.</p>{/if}
         <p class="small muted">Only what you've read about so far: a flashback in a later chapter appears once you reach it.</p>

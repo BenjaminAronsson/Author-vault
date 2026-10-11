@@ -70,7 +70,7 @@
       <h1>{e.title}{#if /dead/.test(status)} <span class="muted">†</span>{/if}</h1>
       {#if gen && lifespan(e)}<div class="life">{lifeLine(e)}{#if e.living} <span class="chip">living · private</span>{/if}</div>{/if}
       {#if e.aliases.length}<div class="muted small">also: {e.aliases.join(', ')}</div>{/if}
-      <div class="chips">{#each chips as c (c)}<span class="chip"><EntityLink id={c} /></span>{/each}</div>
+      <div class="chips">{#each chips as c, ci (ci)}<span class="chip"><EntityLink id={c} /></span>{/each}</div>
       {#if signature && ok(signature.source)}<p class="quote sig">“{signature.text}”</p>{/if}
       <Actions {id} />
     </div>
@@ -89,8 +89,8 @@
       <div><div class="k">Born</div>{e.born ?? '—'}</div>
       <div><div class="k">Died</div>{e.died && store.chapter?.date && parseDate(e.died)?.sort <= store.chapter.date.sort ? e.died : '—'}</div>
       {:else}
-      <div><div class="k">Wants</div>{#each goalHist.filter((g) => g.now === 'active') as g (g.goal)}<div>{g.goal}</div>{:else}<span class="muted">—</span>{/each}</div>
-      <div><div class="k">Afraid of</div>{#each fears.slice(0, 2) as f (f.fear)}<div>{f.fear}</div>{:else}<span class="muted">—</span>{/each}</div>
+      <div><div class="k">Wants</div>{#each goalHist.filter((g) => g.now === 'active') as g, gi (gi)}<div>{g.goal}</div>{:else}<span class="muted">—</span>{/each}</div>
+      <div><div class="k">Afraid of</div>{#each fears.slice(0, 2) as f, fi (fi)}<div>{f.fear}</div>{:else}<span class="muted">—</span>{/each}</div>
       <div><div class="k">Warmest</div>{#if mine[0] && mine[0].n > 0}<EntityLink id={mine[0].to} /> <span class="small muted">{mine[0].bond}</span>{:else}<span class="muted">—</span>{/if}</div>
       <div><div class="k">Coldest</div>{#if mine.at(-1) && mine.at(-1).n < 0}<EntityLink id={mine.at(-1).to} /> <span class="small muted">{mine.at(-1).bond}</span>{:else}<span class="muted">—</span>{/if}</div>
       {/if}
@@ -113,7 +113,7 @@
   <div class="cols">
     <section class="card">
       <h2>{T.goals}</h2>
-      {#each goalHist as g (g.goal)}
+      {#each goalHist as g, gi (gi)}
         <div class="goal">
           <div class="gl"><span class="gm" data-s={g.now}>{marks[g.now] ?? '●'}</span> {g.goal} <span class="small muted">{g.horizon} · {g.now ?? '—'}</span></div>
           <div class="track" aria-hidden="true">
@@ -127,10 +127,10 @@
     </section>
     <section class="card">
       <h2>{T.fears}</h2>
-      {#each fears as f (f.fear)}<div class="item"><strong>{f.fear}</strong>{#if f.root}<div class="small muted">root: {f.root}</div>{/if}{#if f.shows}<div class="small">shows: {f.shows}</div>{/if}</div>
+      {#each fears as f, fi (fi)}<div class="item"><strong>{f.fear}</strong>{#if f.root}<div class="small muted">root: {f.root}</div>{/if}{#if f.shows}<div class="small">shows: {f.shows}</div>{/if}</div>
       {:else}<p class="muted small">None recorded yet.</p>{/each}
       <h2 class="mt">{T.dreams}</h2>
-      {#each dreams as d (d.text)}<div class="item"><Markdown text={d.text} /></div>{:else}<p class="muted small">None recorded yet.</p>{/each}
+      {#each dreams as d, di (di)}<div class="item"><Markdown text={d.text} /></div>{:else}<p class="muted small">None recorded yet.</p>{/each}
     </section>
   </div>
   {/if}
@@ -139,16 +139,16 @@
     <section class="card">
       <h2>{T.voice}</h2>
       <div class="tabs" role="tablist">
-        {#each voiceMoods as m (m.mood)}<button role="tab" class="btn" class:on={curMood?.mood === m.mood} aria-selected={curMood?.mood === m.mood} onclick={() => (mood = m.mood)}>{m.mood} <span class="muted">{m.quotes.length}</span></button>{/each}
+        {#each voiceMoods as m, mi (mi)}<button role="tab" class="btn" class:on={curMood?.mood === m.mood} aria-selected={curMood?.mood === m.mood} onclick={() => (mood = m.mood)}>{m.mood} <span class="muted">{m.quotes.length}</span></button>{/each}
       </div>
-      {#each curMood?.quotes ?? [] as q (q.text)}
+      {#each curMood?.quotes ?? [] as q, qi (qi)}
         <blockquote class="quote" class:future={fut(q.source)}>“{q.text}” <span class="small muted">— {q.source ?? ''}</span></blockquote>
       {/each}
       {#if store.canonOk('expansion') && e.voice?.expansion?.length}
         <div class="label mt">Expansion lines</div>
-        {#each e.voice.expansion.filter((q) => ok(q.source)) as q (q.text)}<blockquote class="quote expq">“{q.text}” <span class="exp-mark">EXP</span></blockquote>{/each}
+        {#each e.voice.expansion.filter((q) => ok(q.source)) as q, qi (qi)}<blockquote class="quote expq">“{q.text}” <span class="exp-mark">EXP</span></blockquote>{/each}
       {/if}
-      {#if e.voice?.diction?.length}<div class="small muted mt">{#each e.voice.diction as d (d)}<div><Markdown text={d} /></div>{/each}</div>{/if}
+      {#if e.voice?.diction?.length}<div class="small muted mt">{#each e.voice.diction as d, di (di)}<div><Markdown text={d} /></div>{/each}</div>{/if}
     </section>
   {/if}
 
@@ -184,7 +184,7 @@
     <section class="card">
       <h2>{T.relations}</h2>
       <Web focus={id} hops={1} height={300} />
-      {#each mine as r (r.to)}
+      {#each mine as r, ri (ri)}
         <div class="rel small"><span class="sw" style:background={colorOf(r.n)}></span> feels <strong>{r.bond || r.feels}</strong> toward <EntityLink id={r.to} />
           {#if rel.directed[`${r.to}>${id}`]}{@const b = rel.directed[`${r.to}>${id}`]}<span class="muted"> · gets back {b.bond || b.feels} ({b.n > 0 ? '+' : ''}{b.n})</span>{/if}
           <span class="muted" title={describe(store, r)}> ⓘ</span></div>
@@ -192,22 +192,22 @@
     </section>
     <section class="card">
       <h2>{T.asSeenBy}</h2>
-      {#each seenBy as p (p.heading)}
+      {#each seenBy as p, pi (pi)}
         <div class="seen"><Avatar id={p.by} size={28} /><div><EntityLink id={p.by} /><Markdown text={p.text} /></div></div>
       {/each}
-      {#each theirs.filter((r) => !seenBy.some((p) => p.by === r.from)) as r (r.from)}
+      {#each theirs.filter((r) => !seenBy.some((p) => p.by === r.from)) as r, ri (ri)}
         <div class="seen"><Avatar id={r.from} size={28} /><div><EntityLink id={r.from} /> <span class="small">feels {r.bond || r.feels} <span class="sw" style:background={colorOf(r.n)}></span></span></div></div>
       {/each}
       {#if !seenBy.length && !theirs.length}<p class="muted small">Nobody's view recorded yet.</p>{/if}
       <h2 class="mt">{T.knowsNow}</h2>
-      {#each knows as k (k.text)}<div class="small"><Markdown text={'- ' + k.text} /></div>{:else}<p class="muted small">No knowledge recorded yet.</p>{/each}
+      {#each knows as k, ki (ki)}<div class="small"><Markdown text={'- ' + k.text} /></div>{:else}<p class="muted small">No knowledge recorded yet.</p>{/each}
       <p class="small muted">This is what <code>/become</code> loads at {store.chapter?.id}.</p>
     </section>
   </div>
 
   {#if arc}<section class="card"><h2>Arc</h2><Markdown text={arc} /></section>{/if}
   <section class="card"><h2>{T.timeline}</h2><TimelineList entity={e} /></section>
-  {#each rest as h (h)}<details class="card"><summary><strong>{h}</strong></summary><Markdown text={sectionMarkdown(S[h])} /></details>{/each}
+  {#each rest as h, hi (hi)}<details class="card"><summary><strong>{h}</strong></summary><Markdown text={sectionMarkdown(S[h])} /></details>{/each}
   {/if}
 </article>
 

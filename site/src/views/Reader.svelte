@@ -51,7 +51,7 @@
 
     {#if changes.length}
       <div class="label">In this chapter, feelings changed</div>
-      {#each changes as r (r.from + r.to)}
+      {#each changes as r, ri (ri)}
         <p class="chg"><EntityLink id={r.from} /> → <EntityLink id={r.to} />: <span class="sw" style:background={colorOf(r.n)}></span> <strong>{r.bond}</strong>{#if r.prev} <span class="muted">(was {r.prev.bond})</span>{/if}</p>
       {/each}
     {/if}

@@ -1,4 +1,5 @@
 // Global app state: the loaded world, the reading bookmark, filters and navigation, mirrored in the URL hash.
+import { load } from './storage.js';
 import { buildClock, placementAnchor, buildSnapshots, fallbackEdges, introductionIndex, coverage } from '../parser/derive.js';
 
 const CANONS = ['book', 'expansion', 'draft'];
@@ -163,7 +164,7 @@ export function readHash(s = store) {
 export function applyHash(s = store) {
   const h = readHash(s);
   s.view = h.view; s.sel = h.sel; s.cont = h.cont; s.follow = h.follow; s.canon = h.canon.length ? h.canon : [...CANONS]; s.future = h.future; s.showLiving = h.living;
-  s.at = h.at ?? (s.model ? localStorage.getItem(`bookmark:${s.model.world}`) : null);
+  s.at = h.at ?? (s.model ? load(`bookmark:${s.model.world}`) : null);
 }
 let writing = false;
 export function writeHash(s = store, push = false) {

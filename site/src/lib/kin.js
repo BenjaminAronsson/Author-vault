@@ -25,9 +25,10 @@ const get = (idx, k, id) => [...(idx[k].get(id) ?? [])];
  * Generations around a person: rows from the oldest ancestors (negative) to the youngest descendants.
  * → { rows: [{ gen, ids }], edges: [{ from: parent, to: child }], spouses: [[a, b]], siblings, gen: {id: gen}, order: {id: birth rank}, spousesOf }
  * `keep(id)` filters people out (e.g. not yet born at the bookmark, or living and hidden). `stop`: a Set of people
- * whose further ancestors/descendants are folded away.
+ * whose further ancestors/descendants are folded away; `more`: people opened one generation past the limit.
+ * `tie(a, b)`: whether a marriage counts yet (the tree grows with the bookmark).
  */
-export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => true, siblings = false, stop = null } = {}) {
+export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => true, siblings = false, stop = null, more = null, tie = () => true } = {}) {
   const open = (id) => !stop?.has(id); // collapsed branches: placed, but not followed further
   const sort = byBirth(model);
   const placed = new Map(); // id → gen
@@ -36,7 +37,8 @@ export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => t
   const put = (id, gen, partner = null) => { if (placed.has(id) || !keep(id)) return false; placed.set(id, gen); if (partner) partnerOf.set(id, partner); if (!rows.has(gen)) rows.set(gen, []); rows.get(gen).push(id); return true; };
   // spouses in order of marriage (a first husband before a second), else by birth
   const married = (a, b) => parseDate(kinDetail(model, a, b).from)?.sort ?? Infinity;
-  const spousesOf = (id) => get(idx, 'spouses', id).sort((a, b) => married(id, a) - married(id, b) || sort(a, b));
+  // tie(a, b): is the marriage already a fact (at the bookmark)? A later marriage seats no spouse yet
+  const spousesOf = (id) => get(idx, 'spouses', id).filter((s) => tie(id, s)).sort((a, b) => married(id, a) - married(id, b) || sort(a, b));
   put(focus, 0);
   for (const s of spousesOf(focus)) put(s, 0, focus);
   // ancestors, generation by generation (pedigree order: each child's parents together)
@@ -55,6 +57,18 @@ export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => t
     for (const c of [...next]) for (const s of spousesOf(c)) if (put(s, g, c)) next.push(s);
     layer = next;
   }
+  // opened past the limit: someone in `more` shows their next generation (and it can be opened again from there)
+  const queue = [...(more ?? [])].filter((id) => placed.has(id));
+  while (queue.length) {
+    const id = queue.shift(), g = placed.get(id);
+    if (!open(id)) continue;
+    const got = [];
+    if (g < 0) { for (const p of get(idx, 'parents', id).sort(sort)) if (put(p, g - 1)) got.push(p); }
+    else if (g > 0 && open(partnerOf.get(id))) {
+      for (const c of get(idx, 'children', id).sort(sort)) if (put(c, g + 1)) { got.push(c); for (const s of spousesOf(c)) put(s, g + 1, c); }
+    }
+    for (const x of got) if (more.has(x)) queue.push(x);
+  }
   // brothers and sisters on the person's row (not their families)
   const sibs = siblings ? get(idx, 'siblings', focus).sort(sort).filter((s) => put(s, 0)) : [];
   // seat spouses beside their partner: one spouse to the right; with several, the first marriage left, later ones right
@@ -70,7 +84,7 @@ export function familyTree(model, idx, focus, { up = 2, down = 2, keep = () => t
   const edges = [], spouses = [];
   for (const [id, g] of placed) {
     for (const c of get(idx, 'children', id)) if (placed.get(c) === g + 1) edges.push({ from: id, to: c });
-    for (const s of get(idx, 'spouses', id)) if (placed.get(s) === g && id < s) spouses.push([id, s]);
+    for (const s of get(idx, 'spouses', id)) if (placed.get(s) === g && id < s && tie(id, s)) spouses.push([id, s]);
   }
   const order = {};
   [...placed.keys()].sort(sort).forEach((id, i) => (order[id] = i));

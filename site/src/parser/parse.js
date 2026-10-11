@@ -60,6 +60,8 @@ export function parseWorld({ world, files, images = [] }) {
   for (const e of Object.values(entities)) if (e.name.toLowerCase() !== 'voice') add(e.name, e.id);
   for (const e of Object.values(entities)) { add(e.title, e.id); e.aliases.forEach((a) => add(a, e.id)); }
   for (const e of Object.values(entities)) add(e.id, e.id); // path links, e.g. [[Characters/Mara/voice|voice]]
+  // resolved link lists: each entity once (a note may link someone twice, or by two aliases)
+  const ids = (v) => [...new Set(wikilinks(v).map(resolve).filter(Boolean))];
   const resolve = (name) => (name ? nameIndex[String(name).toLowerCase()] ?? null : null);
   const resolveImage = (ref) => {
     const n = firstLink(ref) ?? (typeof ref === 'string' ? ref : null);
@@ -94,12 +96,12 @@ export function parseWorld({ world, files, images = [] }) {
       id: cid, entity: e.id, story: sid, num: Number(m?.[2] ?? 0),
       title: (e.title.split(/\s+[—-]\s+/)[1] ?? e.title).trim(),
       pov: resolve(firstLink(e.fm.pov)),
-      characters: wikilinks(e.fm.characters).map(resolve).filter(Boolean),
-      places: wikilinks(e.fm.places).map(resolve).filter(Boolean),
+      characters: ids(e.fm.characters),
+      places: ids(e.fm.places),
       // named or talked about, but not on scene
-      mentioned: wikilinks(e.fm.mentioned).map(resolve).filter(Boolean),
-      mentionedPlaces: wikilinks(e.fm.mentioned_places).map(resolve).filter(Boolean),
-      events: wikilinks(e.fm.events).map(resolve).filter(Boolean),
+      mentioned: ids(e.fm.mentioned),
+      mentionedPlaces: ids(e.fm.mentioned_places),
+      events: ids(e.fm.events),
       summary: (e.sections.Summary?.text ?? '').trim(),
       canon: e.canon ?? story.canon, continuity: e.fm.continuity ?? story.continuity,
       inWorld: e.fm.in_world ?? null,
@@ -154,7 +156,7 @@ export function parseWorld({ world, files, images = [] }) {
     if (e.type === 'media') {
       // a photo or scan, tagged with who is in it, where, when and at what event
       e.image = resolveImage(e.fm.file ?? e.fm.image);
-      e.depicts = wikilinks(e.fm.depicts).map(resolve).filter(Boolean);
+      e.depicts = ids(e.fm.depicts);
       e.mediaPlace = resolve(firstLink(e.fm.place));
       e.mediaEvent = resolve(firstLink(e.fm.event));
       e.mediaDate = e.fm.date != null ? String(e.fm.date) : null;
@@ -210,7 +212,7 @@ export function parseWorld({ world, files, images = [] }) {
       const anchors = wikilinks(e.fm.anchors).map(step).filter(Boolean);
       e.openedAt = step(e.fm.opened_at) ?? anchors[0] ?? e.firstSeen;
       e.closedAt = step(e.fm.closed_at) ?? (/(written|resolved|dropped)/.test(e.fm.status ?? '') ? anchors.at(-1) ?? null : null);
-      e.cast = wikilinks(e.fm.characters).map(resolve).filter(Boolean);
+      e.cast = ids(e.fm.characters);
     }
   }
 

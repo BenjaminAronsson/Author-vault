@@ -70,7 +70,7 @@
     {/if}
     {#if e.type === 'media' || e.media?.length || e.gallery?.length || (store.source?.dir && ['location', 'event'].includes(e.type))}<section class="card"><h2>{e.type === 'media' ? 'Photo' : 'Photos'}</h2><Gallery id={e.id} add={['location', 'event'].includes(e.type)} /></section>{/if}
     {#if e.preamble}<div class="card"><Markdown text={e.preamble} /></div>{/if}
-    {#each e.sectionOrder as h (h)}
+    {#each e.sectionOrder as h, hi (hi)}
       {#if h === 'Timeline'}
         <section class="card"><h2>{T.timeline}</h2><TimelineList entity={e} /></section>
       {:else if sectionMarkdown(e.sections[h]).replace(/[_\-|*:\s]/g, '').length > 3}

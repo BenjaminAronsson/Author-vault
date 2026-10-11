@@ -1,4 +1,5 @@
 <script>
+  import { load, save as remember } from './lib/storage.js';
   import { onMount } from 'svelte';
   import { store, applyHash, readHash, writeHash, isWritingHash } from './lib/store.svelte.js';
   import { loadDataWorld, parseWorldGroup } from './lib/loader.js';
@@ -23,8 +24,8 @@
   import Tour from './components/Tour.svelte';
   import InfoCard from './components/InfoCard.svelte';
 
-  let theme = $state(localStorage.getItem('theme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-  $effect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem('theme', theme); });
+  let theme = $state(load('theme') ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  $effect(() => { document.documentElement.dataset.theme = theme; remember('theme', theme); });
   $effect(() => { document.title = store.model ? `${store.model.world} · ${T.appName}` : T.appName; });
 
   async function openData(entry) {
@@ -64,12 +65,12 @@
     store.source = source;
     const h = readHash();
     if (h.world === model.world) applyHash();
-    else { store.view = 'home'; store.sel = null; store.at = localStorage.getItem(`bookmark:${model.world}`); store.cont = 'main'; }
+    else { store.view = 'home'; store.sel = null; store.at = load(`bookmark:${model.world}`); store.cont = 'main'; }
     writeHash(store, true);
     loadPending(model.world);
     loadEdits(model.world);
     // the tour is for arriving at a world, not for following a link to a page in it
-    if (!localStorage.getItem('tour:done') && !(h.world === model.world && (h.view || h.sel))) setTimeout(() => (store.tourOpen = true), 400);
+    if (!load('tour:done') && !(h.world === model.world && (h.view || h.sel))) setTimeout(() => (store.tourOpen = true), 400);
   }
   function leave() { store.model = null; history.pushState(null, '', location.pathname); }
 
@@ -219,6 +220,8 @@
     {/if}
 
     <main>
+      <!-- a bug in one view shouldn't take the whole viewer down: show what broke and a way back -->
+      <svelte:boundary onerror={(err) => console.error('[World Viewer] view failed:', err)}>
       {#key store.model.world + store.cont}
         {#if !store.sequence.length && store.view !== 'entity'}
           <div class="empty card">
@@ -239,6 +242,15 @@
         {:else if store.view === 'reader'}<Reader />
         {:else}<Home />{/if}
       {/key}
+      {#snippet failed(err, reset)}
+        <div class="empty card" role="alert">
+          <h2>This view ran into a problem</h2>
+          <p class="muted small">{err?.message ?? err}</p>
+          <p><button class="btn primary" onclick={() => { store.go('home'); reset(); }}>Back to Home</button> <button class="btn" onclick={reset}>Try again</button></p>
+          <p class="small muted">The notes are untouched. If it keeps happening, the message above (and the browser console) helps track it down.</p>
+        </div>
+      {/snippet}
+      </svelte:boundary>
     </main>
 
     {#if store.sequence.length}<Scrubber />{/if}

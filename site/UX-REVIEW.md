@@ -61,3 +61,31 @@ Severity:
 ## Other notes
 - **Load time** (measured): Norrgården parses in 22 ms, and a generated 192-chapter world in 32 ms plus 17 ms for snapshots. The production build loads in 0.66 s, and a headless CPU profile of opening the Timeline shows about 0.1 s of work. The freezes seen during this review came from the browser automation: the tab was in the background, where Chrome pauses rendering. They weren't caused by the app. Nothing to fix.
 - The tour opened on every fresh device, including deep links like `#view=family`. Fixed: it only opens when you arrive at a world, not when you follow a link into it.
+
+## 5. Error handling and null checks (review 2026-10-11)
+
+Prompted by crashes on the published site when opening the book worlds. Found by mounting the whole viewer on every world (in a test and in a real browser) and stepping the bookmark through every view.
+
+| # | Finding | Sev | Fix |
+|---|---|---|---|
+| 5.1 | About 20 `{#each}` lists were keyed by text from the notes (quotes, goals, fears, relation rows, rel tags, headings, wikilinks), and notes may repeat those. Svelte stops rendering on a duplicate key: "each_key_duplicate" on Home, People and Timeline. | High | Keyed by position. Link lists (`characters`, `places`, `mentioned`, `events`, `depicts`, `cast`) are deduplicated by the parser, so a person linked twice or through an alias appears once. |
+| 5.2 | The relationship web always included its focus, even when the focus wasn't a visible character (hidden, filtered, not a person). With no position, the tween read `.x` of undefined in a loop, plus NaN in SVG. | High | The focus counts only if it's in the web. Nodes and lines are drawn only with a position, and the tween skips anything that can't animate. |
+| 5.3 | With an empty timeline (nothing extracted yet, or filters hiding every story), the time bar read chapter −1. | High | A note explains why and how to fix it, and the time bar waits. |
+| 5.4 | Startup read `localStorage` directly, which throws when site data is blocked, in some private modes and in sandboxed frames. The whole viewer failed to start. | Med | `lib/storage.js` never throws. The viewer still works, it just doesn't remember. |
+| 5.5 | Map edits (move pin, undo, auto-arrange, own map, map image) and photo tagging had no error handling. A refused folder permission failed silently. | Med | Caught. The message says what couldn't be saved. |
+| 5.6 | Callers index `model.chapters[cid]` for every step without checking. | Low | Sequences are guaranteed to hold only chapters that exist, checked once where they're built. |
+| 5.7 | One broken view took down the whole page. | Med | An error boundary around the views shows what broke, with **Back to Home** and **Try again**. |
+| 5.8 | The remembered Family layout could be a style that no longer exists. | Low | Validated against the styles there are. |
+
+**Tests that keep it fixed:**
+- `test/render.test.js` mounts the app on the samples, a deliberately messy world, a messy family and an empty world. For each it renders every view at the first, middle and last bookmark, with spoilers hidden and dimmed, plus a person, place and event page, and every family style around everyone. Any thrown error, `console.error` or NaN on screen fails it.
+- It also checks the tree hides people born later and marriages that haven't happened yet.
+- The test was verified to fail on the original Home bug.
+- CI runs `npm test` before every deploy, so these block a broken build from reaching GitHub Pages.
+
+## 6. Family tree follow-ups (user feedback)
+| # | Finding | Fix |
+|---|---|---|
+| 6.1 | The tree showed people and marriages that hadn't happened yet: people with only undated lines counted as always known. | People born after the bookmark are hidden (faded with "show future"). Marriages dated later seat no spouse and draw no ring. |
+| 6.2 | The fold button changed from an arrow to a number with no explanation. | **−** hides a branch, **+N** shows N people (the tooltip says "Show 3 children"). |
+| 6.3 | At the generation limit the button couldn't open the next generation. | **+N** opens past the limit, one generation at a time, for that branch only. |

@@ -20,6 +20,8 @@ const serveData = {
 export default defineConfig({
   plugins: [svelte(), viteSingleFile(), serveData],
   publicDir: false,
+  // tests that mount components need Svelte's browser build
+  resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
   build: {
     outDir: 'dist',
     emptyOutDir: false, // dist/data holds generated world data — never wipe it

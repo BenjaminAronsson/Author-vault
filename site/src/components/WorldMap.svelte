@@ -65,22 +65,27 @@
       drag = { ...drag, ...(inside ? frac(ev) : { x: null, y: null }), ghost: { cx: ev.clientX, cy: ev.clientY } };
     }
   }
+  // vault writes can fail (permission refused, folder moved): say so instead of failing silently
+  const failed = (err) => { if (err?.name !== 'AbortError') note = `Couldn't save: ${err?.message ?? err}`; };
   async function up() {
     window.removeEventListener('pointermove', move);
     const d = drag; drag = null;
     if (!d || d.x == null) return;
     const e = store.model.entities[d.id];
     undo = [...undo.slice(-30), { id: d.id, prev: e.map ? { ...e.map } : null }];
-    const r = await editField(e, 'map', { x: d.x, y: d.y });
+    let r;
+    try { r = await editField(e, 'map', { x: d.x, y: d.y }); } catch (err) { failed(err); return; }
     note = r.saved ? `Saved ${e.title}'s position.` : `${e.title} moved. Not saved to the vault yet (see the banner).`;
   }
-  async function undoLast() {
+  const undoLast = (...a) => undoLast_(...a).catch(failed);
+  async function undoLast_() {
     const u = undo.at(-1); if (!u) return;
     undo = undo.slice(0, -1);
     await editField(store.model.entities[u.id], 'map', u.prev);
     note = 'Undid the last move.';
   }
-  async function autoArrange() {
+  const autoArrange = (...a) => autoArrange_(...a).catch(failed);
+  async function autoArrange_() {
     // Suggest spots for unplaced places: near their parent/neighbours, away from others. Pinned places stay put.
     const S = 1000, H = S / aspect;
     const nodes = inFrame.map((p, i) => (p.map ? { id: p.id, fx: p.map.x * S, fy: p.map.y * H } : { id: p.id, x: S / 2 + Math.cos(i) * 150, y: H / 2 + Math.sin(i) * 90 }));
@@ -95,7 +100,8 @@
     for (const n of placed) await editField(store.model.entities[n.id], 'map', { x: Math.min(0.97, Math.max(0.03, n.x / S)), y: Math.min(0.95, Math.max(0.05, n.y / H)) });
     note = `Suggested spots for ${placed.length} place(s). Drag them where they belong.`;
   }
-  async function makeLocalMap(p) {
+  const makeLocalMap = (...a) => makeLocalMap_(...a).catch(failed);
+  async function makeLocalMap_(p) {
     // Places inside p that already sit on this map keep their layout: re-centre and enlarge it on p's own map.
     const kids = places.filter((c) => c.partOf === p.id && c.map && frameOf(c) === fid);
     const c0 = p.map ?? { x: 0.5, y: 0.5 };
@@ -107,7 +113,8 @@
     note = `${p.title} now has its own sketch map${kids.length ? `; ${kids.length} place(s) moved onto it, keeping their layout` : ''}.`;
   }
   let input = $state(null);
-  async function uploadMap(files) {
+  const uploadMap = (...a) => uploadMap_(...a).catch(failed);
+  async function uploadMap_(files) {
     const f = [...(files ?? [])].find((f) => f.type.startsWith('image/'));
     if (!f) return;
     const r = await uploadImage(frame, f, 'map');

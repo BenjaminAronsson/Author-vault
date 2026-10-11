@@ -19,9 +19,9 @@
           <Markdown text={t.text} />
           <div class="tags">
             {#if t.tags.at}<span class="chip">@ <EntityLink id={t.tags.at} /></span>{/if}
-            {#each t.tags.rel as r (r.to)}<span class="chip"><span class="sw" style:background={colorOf(r.n)}></span>{r.bond} → <EntityLink id={r.toId} label={r.to} /></span>{/each}
+            {#each t.tags.rel as r, ri (ri)}<span class="chip"><span class="sw" style:background={colorOf(r.n)}></span>{r.bond} → <EntityLink id={r.toId} label={r.to} /></span>{/each}
             {#if t.tags.status}<span class="chip">status: {t.tags.status}</span>{/if}
-            {#each t.tags.goal as g (g.goal)}<span class="chip">goal “{g.goal}”: {g.status}</span>{/each}
+            {#each t.tags.goal as g, gi (gi)}<span class="chip">goal “{g.goal}”: {g.status}</span>{/each}
             {#if t.evidence}<span class="chip ev" data-e={t.evidence} title="Source value">{t.evidence}</span>{/if}
             {#if t.confidence}<span class="chip cf" data-c={t.confidence} title="How sure">{t.confidence}</span>{/if}
             {#if t.date && (t.date.qual !== 'exact' || t.date.precision === 'span')}<span class="chip" title="Uncertain date">≈ date</span>{/if}

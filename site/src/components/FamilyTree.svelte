@@ -12,29 +12,48 @@
   // viewHeight: the full Family view gives the tree the screen; compact (person pages) keeps a fixed size
   let { focus, up = 2, down = 2, style = 'tree', onpick = (id) => store.open(id), compact = false, viewHeight = null } = $props();
   const idx = $derived((store.version, kinIndex(store.model)));
-  // folded branches: someone's further ancestors (above them) or descendants (below) are tucked away
-  let fold = $state(new Set());
-  $effect(() => { focus; style; fold = new Set(); });
-  const toggle = (id) => { const f = new Set(fold); f.has(id) ? f.delete(id) : f.add(id); fold = f; };
+  // The tree grows with the bookmark: nobody born after it, no marriage before its date. With "show future"
+  // on, later people are there but faded.
+  const now = $derived(store.chapter?.date ?? null);
+  const later = (v) => { const d = parseDate(v); return !!(d && now && d.sort > now.sort); };
+  const unborn = (id) => later(store.model.entities[id]?.born);
+  const future = (id) => store.isFuture(id) || unborn(id);
+  const keep = (id) => id === focus || (store.visible(id) && !(store.future === 'hide' && unborn(id)));
+  const tie = (a, b) => store.future !== 'hide' || !later(kinDetail(store.model, a, b).from);
+
+  // Branches: − folds someone's further ancestors (above) or descendants (below) away; +N shows the N people
+  // there are (folded, or past the generation limit), one generation at a time.
+  let fold = $state(new Set()), more = $state(new Set());
+  $effect(() => { focus; style; fold = new Set(); more = new Set(); });
   const fan = $derived(style === 'fan');
   const tree = $derived(familyTree(store.model, idx, focus, {
     up: style === 'descendants' ? 0 : up, down: style === 'ancestors' || fan ? 0 : down, siblings: style === 'tree' && !compact,
-    keep: (id) => id === focus || store.visible(id), stop: fold,
+    keep, tie, stop: fold, more,
   }));
   const fanLay = $derived(fan ? fanChart(tree, idx, focus) : null);
-  // can this person's branch be folded (or is it folded)? only away from the focus, and only if there is more
-  const further = (id) => {
+  /** { shown, hidden, word } for the next generation away from the focus, or null where there's no button */
+  const branch = (id) => {
     const g = tree.gen[id];
-    if (!g || compact) return 0;
-    return [...(idx[g < 0 ? 'parents' : 'children'].get(id) ?? [])].filter((x) => x === focus || store.visible(x)).length;
+    if (!g || compact || fan) return null;
+    const kin = [...(idx[g < 0 ? 'parents' : 'children'].get(id) ?? [])].filter(keep);
+    const shown = kin.filter((x) => tree.gen[x] === g + (g < 0 ? -1 : 1)).length;
+    const hidden = kin.filter((x) => !(x in tree.gen)).length;
+    if (!shown && !hidden) return null;
+    return { shown, hidden, word: g < 0 ? (hidden === 1 ? 'parent' : 'parents') : (hidden === 1 ? 'child' : 'children') };
   };
+  function grow(id) {
+    const b = branch(id);
+    if (!b) return;
+    if (b.shown) { fold = new Set([...fold, id]); return; } // −: tuck away
+    const f = new Set(fold); f.delete(id); fold = f; // +: unfold, and open past the limit if that's where they are
+    more = new Set([...more, id]);
+  }
 
   const W = $derived(compact ? 132 : 156), H = $derived(compact ? 64 : 76), GX = 30, GY = $derived(compact ? 44 : 56);
   const lay = $derived(layoutFamily(tree, idx, focus, { style: fan ? 'ancestors' : style, W, H, GX, GY, spousesOf: tree.spousesOf }));
   const pos = $derived(lay.nodes);
   const width = $derived(fan ? fanLay.width : lay.width), height = $derived(fan ? fanLay.height : lay.height);
   const ids = $derived(Object.keys(pos));
-  const now = $derived(store.chapter?.date ?? null);
   const dead = (id) => {
     if (/dead|död/.test(store.snap?.status[id] ?? '')) return true;
     const d = parseDate(store.model.entities[id]?.died);
@@ -102,19 +121,20 @@
     {/each}
       {#each ids as id (id)}
         {@const e = store.model.entities[id]}
-        <button class="node" data-entity={id} class:focus={id === focus} class:dead={dead(id)} class:living={e.living}
+        <button class="node" data-entity={id} class:focus={id === focus} class:future={future(id)} class:dead={dead(id)} class:living={e.living}
           style:left={`${pos[id].x}px`} style:top={`${pos[id].y}px`} style:width={`${W}px`} style:height={`${H}px`}
           onclick={() => onpick(id)} title={`${e.title}${e.aliases.length ? ` (${e.aliases.join(', ')})` : ''}`}>
           <Avatar {id} size={compact ? 30 : 38} />
           <span class="txt"><span class="n">{e.title.replace(/\s*\([^)]*\)\s*$/, '')}</span><span class="y">{lifeLine(e)}{dead(id) ? ' †' : ''}</span></span>
         </button>
-        {#if id !== focus && further(id)}
-          {@const g = tree.gen[id]}
-          <button class="fold" class:up={g < 0} aria-expanded={!fold.has(id)}
-            style:left={`${pos[id].x + W / 2 - 11}px`} style:top={`${g < 0 ? pos[id].y - 11 : pos[id].y + H - 11}px`}
-            onclick={(ev) => { ev.stopPropagation(); toggle(id); }}
-            title={fold.has(id) ? `Show ${g < 0 ? 'their parents' : 'their children'} (${further(id)})` : `Fold away ${g < 0 ? 'their ancestors' : 'their descendants'}`}>
-            {fold.has(id) ? `+${further(id)}` : g < 0 ? '▴' : '▾'}</button>
+        {#if id !== focus && branch(id)}
+          {@const g = tree.gen[id]}{@const b = branch(id)}
+          <button class="fold" class:up={g < 0} class:plus={!b.shown} aria-expanded={!!b.shown}
+            style:left={`${pos[id].x + W / 2 - 13}px`} style:top={`${g < 0 ? pos[id].y - 11 : pos[id].y + H - 11}px`}
+            onclick={(ev) => { ev.stopPropagation(); grow(id); }}
+            title={b.shown ? `Hide ${g < 0 ? 'their ancestors' : 'their descendants'}` : `Show ${b.hidden} ${b.word}`}
+            aria-label={b.shown ? `Hide ${g < 0 ? 'ancestors' : 'descendants'} of ${store.name(id)}` : `Show ${b.hidden} ${b.word} of ${store.name(id)}`}>
+            {b.shown ? '−' : `+${b.hidden}`}</button>
         {/if}
       {/each}
   </div>
@@ -158,6 +178,7 @@
   .node:hover { border-color: var(--accent); }
   .node.focus { border: 2px solid var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
   .node.dead { opacity: .55; filter: grayscale(.8); }
+  .node.future { opacity: .4; border-style: dotted; }
   .node.living { border-style: dashed; }
   .txt { display: grid; min-width: 0; }
   .n { font-weight: 600; font-size: .82rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
@@ -165,7 +186,8 @@
   .compact .n { font-size: .76rem; }
   .empty { text-align: center; }
   .fold { position: absolute; min-width: 22px; height: 22px; padding: 0 .3rem; border-radius: 11px; border: 1px solid var(--rule); background: var(--card); color: var(--ink-2); font: 600 .7rem var(--sans); line-height: 1; z-index: 2; }
-  .fold:hover, .fold[aria-expanded='false'] { border-color: var(--accent); color: var(--accent); }
+  .fold:hover { border-color: var(--accent); color: var(--accent); }
+  .fold.plus { background: var(--accent); border-color: var(--accent); color: var(--card); }
   @media (pointer: coarse) { .fold { min-width: 30px; height: 30px; border-radius: 15px; } }
   .fan .cell { cursor: pointer; }
   .fan .cell path { fill: color-mix(in srgb, var(--accent) calc(30% - var(--g) * 4%), var(--card)); stroke: var(--paper); stroke-width: 2; }

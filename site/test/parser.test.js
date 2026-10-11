@@ -140,3 +140,24 @@ describe('present vs. mentioned', () => {
     expect(last.presence['Characters/Olof/Olof'].place).toBe('Places/Mill');
   });
 });
+
+describe('robust to messy notes', () => {
+  const files = {
+    'Stories/B1/Story.md': '---\ntype: story\norder: 1\n---\n# B1',
+    'Stories/B1/Chapters/B1-C01.md': '---\ntype: chapter\nwhen: B1/C01\ncharacters: ["[[Anna]]", "[[Anna]]", "[[Annie]]"]\nplaces: ["[[Mill]]", "[[Mill]]"]\nevents: ["[[Fire]]", "[[Fire]]"]\n---\n# B1-C01 — One',
+    'Characters/Anna/Anna.md': '---\ntype: character\naliases: [Annie]\n---\n# Anna\n## Timeline\n- **B1-C01** · `pov:objective` · `rel:[[Bo]]=ally/1` · `rel:[[Bo]]=rival/-1` · Twice. ([[B1-C01]])\n',
+    'Characters/Bo/Bo.md': '---\ntype: character\n---\n# Bo',
+    'Places/Mill.md': '---\ntype: location\n---\n# Mill', 'Events/Fire.md': '---\ntype: event\n---\n# Fire',
+  };
+  const m = parseWorld({ world: 'T', files: Object.entries(files).map(([path, text]) => ({ path, text })) });
+  it('lists each linked entity once, also through an alias', () => {
+    const c = m.chapters['B1-C01'];
+    expect(c.characters).toEqual(['Characters/Anna/Anna']);
+    expect(c.places).toEqual(['Places/Mill']);
+    expect(c.events).toEqual(['Events/Fire']);
+  });
+  it('sequences only hold chapters the model has', () => {
+    const c = buildClock(m);
+    for (const seq of Object.values(c.sequences)) for (const cid of seq) expect(m.chapters[cid]).toBeTruthy();
+  });
+});
