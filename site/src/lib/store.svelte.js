@@ -1,5 +1,5 @@
 // Global app state: the loaded world, the reading bookmark, filters and navigation, mirrored in the URL hash.
-import { buildClock, buildSnapshots, fallbackEdges, introductionIndex, coverage } from '../parser/derive.js';
+import { buildClock, placementAnchor, buildSnapshots, fallbackEdges, introductionIndex, coverage } from '../parser/derive.js';
 
 const CANONS = ['book', 'expansion', 'draft'];
 
@@ -40,7 +40,7 @@ class Store {
   /** Books in reading order: base stories (and branch stories) own a range; inserted side stories live inside their host book. */
   books = $derived.by(() => {
     if (!this.model) return [];
-    const placed = (sid) => { const s = this.model.stories[sid]; return s && s.continuity === 'main' && /(after|between)\s/i.test(s.placement ?? ''); };
+    const placed = (sid) => { const s = this.model.stories[sid]; return s && s.continuity === 'main' && !!placementAnchor(s.placement); };
     const out = [];
     this.sequence.forEach((cid, i) => {
       const sid = this.model.chapters[cid].story;

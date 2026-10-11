@@ -14,7 +14,7 @@ export function sentimentOf(text) {
 
 /** "after B1-C03" / "between B1-C03 and B1-C04" → "B1-C03" */
 export function placementAnchor(placement) {
-  const m = /(?:after|between)\s+([^\s,]+)/i.exec(placement ?? '');
+  const m = /(?:after|between|efter|mellan)\s+([^\s,]+)/i.exec(placement ?? '');
   return m ? chapterRef(m[1]) : null;
 }
 

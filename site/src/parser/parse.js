@@ -85,6 +85,7 @@ export function parseWorld({ world, files, images = [] }) {
   }
   for (const e of Object.values(entities)) {
     if (e.type !== 'chapter') continue;
+    if (/\/Text\//.test(e.path)) continue; // Stories/<id>/Text/Cxx.md is the readable prose of an expansion chapter, not the chapter note
     const cid = chapterRef(e.fm.when) ?? e.name;
     const m = /^(.+)-C(\d+)$/.exec(cid);
     const sid = m?.[1] ?? firstLink(e.fm.story) ?? 'unknown';
