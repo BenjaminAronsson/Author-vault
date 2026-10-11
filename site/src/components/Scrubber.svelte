@@ -7,7 +7,7 @@
   const book = $derived(store.book);
   const bookSteps = $derived(book ? seq.slice(book.start, book.end + 1).map((cid, k) => ({ cid, i: book.start + k })) : []);
   const total = $derived(seq.length);
-  const label = (cid) => { const c = ch(cid); return `${c.story === book?.story ? `Chapter ${c.num}` : `${store.model.stories[c.story]?.title ?? c.story} · ${c.num}`} — ${c.title}`; };
+  const label = (cid) => { const c = ch(cid); if (!c) return ''; return `${c.story === book?.story ? `Chapter ${c.num}` : `${store.model.stories[c.story]?.title ?? c.story} · ${c.num}`} — ${c.title}`; };
   const density = $derived.by(() => {
     const d = Object.fromEntries(seq.map((c) => [c, ch(c).events.length + ch(c).characters.length / 3]));
     for (const e of Object.values(store.model.entities)) for (const t of e.timeline ?? []) if (t.step in d) d[t.step] += 0.5;

@@ -220,7 +220,17 @@
 
     <main>
       {#key store.model.world + store.cont}
-        {#if store.view === 'entity' && store.sel && store.model.entities[store.sel]}
+        {#if !store.sequence.length && store.view !== 'entity'}
+          <div class="empty card">
+            <h2>Nothing on the timeline {store.canon.length < 3 ? 'with these filters' : 'yet'}</h2>
+            {#if Object.values(store.model.chapters).some((c) => !c.archive)}
+              <p class="muted">The stories in this world are filtered out. <button class="btn" onclick={() => { store.canon = ['book', 'expansion', 'draft']; }}>Show everything</button></p>
+            {:else}
+              <p class="muted">No chapters{store.model.genealogy ? ' or dates' : ''} have been extracted yet. Run <code>/extract-chapter {store.model.world} {store.model.genealogy ? 'arkiv' : '<story>'} all</code>, then <code>/visualize {store.model.world}</code>.</p>
+            {/if}
+            <p class="small muted">The notes themselves are still in search (⌘K).</p>
+          </div>
+        {:else if store.view === 'entity' && store.sel && store.model.entities[store.sel]}
           {#if selType === 'character'}<Character id={store.sel} />{:else}<Entity id={store.sel} />{/if}
         {:else if store.view === 'timeline'}<Timeline />
         {:else if store.view === 'people'}<People />
@@ -231,7 +241,7 @@
       {/key}
     </main>
 
-    <Scrubber />
+    {#if store.sequence.length}<Scrubber />{/if}
   </div>
   {#if store.searchOpen}<Search />{/if}
   {#if store.coverageOpen}<Coverage />{/if}
@@ -265,6 +275,7 @@
   .banner.pend { background: color-mix(in srgb, var(--accent) 10%, var(--paper)); border-color: var(--accent); }
   .banner pre { width: 100%; white-space: pre-wrap; margin: .3rem 0 0; }
   .center { text-align: center; }
+  .empty { max-width: 640px; margin: 2rem auto; padding: 1.2rem 1.4rem; }
   .err { color: var(--neg); }
   @media (max-width: 1560px) { .hide-sm { display: none; } }
   .morebtn { display: none; }
