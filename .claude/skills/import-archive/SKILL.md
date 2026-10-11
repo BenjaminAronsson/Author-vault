@@ -22,6 +22,7 @@ A genealogy world has no chapters. Each file is a **source**, cited as `[[arkiv-
    - Old `.doc` files are skipped: ask the user to save them as `.docx`.
    - Files already imported with identical content are skipped. A changed file becomes a new source marked as a new version of the old one, which stays read-only.
    - Originals are kept in `_sources/arkiv/original/`.
+   - Photos and scans embedded in .docx files are kept in `_assets/sources/`.
 3. **Commit:** `tools/world-repo.sh commit "<World>" "Archive: <n> files added"`.
 4. **Tell the user** how many files and words were added, and what extraction will cost:
    ```
@@ -29,6 +30,9 @@ A genealogy world has no chapters. Each file is a **source**, cited as `[[arkiv-
    ```
    Genealogy uses one agent per file, and the estimate already accounts for that.
 5. **Next:** `/extract-chapter <World> arkiv all`, then `/world-check <World>` (possible duplicates, kinship and date conflicts), then `/visualize <World>`. The viewer opens with a time axis and a **Family** tab.
+
+## Export
+`node tools/vault.mjs export-gedcom "<World>" [file.ged]` writes a GEDCOM file for Disgen, MyHeritage, Holger and similar programs. It includes people, families, sources and dates with ca/före/efter. Living people are left out unless `--include-living` is given.
 
 ## Privacy
 - People marked `living: true` are hidden in the viewer unless the user shows them.

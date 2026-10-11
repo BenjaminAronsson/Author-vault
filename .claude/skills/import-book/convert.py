@@ -196,6 +196,12 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     (out / "_full.md").write_text(text, encoding="utf-8")
     if a.whole:
+        if ext == ".docx":  # photos and scans embedded in a Word file are kept for the archive
+            z = zipfile.ZipFile(src)
+            for n in z.namelist():
+                if n.startswith("word/media/") and re.search(r"\.(png|jpe?g|gif|webp|tiff?|bmp)$", n, re.I):
+                    (out / "media").mkdir(exist_ok=True)
+                    (out / "media" / Path(n).name).write_bytes(z.read(n))
         print(f"{len(text.split()):,} words -> {out / '_full.md'}", file=sys.stderr)
         return
 

@@ -22,6 +22,11 @@ The site in `site/dist/index.html` is static and built once. This command only r
    If `rel:`/`at:` coverage is low, offer to run the **continuity-keeper** agent to backfill the viewer tags (SCHEMA › Machine-readable timeline tags) on existing Timeline lines, then re-run step 2.
 4. Open it: `xdg-open "site/dist/index.html#world=<World>"` (macOS: `open`). The page works straight from the file, with no server.
 5. Remind the user of what they can do in the viewer:
+   - **Genealogy worlds:**
+     - the bookmark moves through dates (zoom: all time or one decade)
+     - **Family** shows the tree as of the date, with icons for marriage, adoption, foster and step and line styles for how sure each link is
+     - living people stay hidden unless shown
+     - `--redact-living` makes a shareable copy of the data, and `vault export-gedcom` exports to other programs
    - **Bookmark:** move it with ← → to where they are in the story. Spoilers after it stay hidden.
    - **Portraits:** drag and drop pictures onto any avatar.
    - **Links back:** "Copy /become" and "Open in Obsidian" on every page.

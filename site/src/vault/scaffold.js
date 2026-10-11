@@ -42,7 +42,7 @@ export function readArchive(worldDir) {
  * Adds research files to a genealogy world's archive (append-only). Each new or changed file becomes the next
  * source C<nn>.md, starting with "# <file name>"; the original is kept in _sources/arkiv/original/.
  * Identical content already in the archive is skipped, so re-running on a growing folder only adds what's new.
- * files = [{ path: original file, text: converted markdown }]
+ * files = [{ path: original file, text: converted markdown, media?: [image paths embedded in it] }]
  */
 export function addArchive(worldDir, templatesDir, files) {
   const src = join(worldDir, '_sources', ARCHIVE);
@@ -59,11 +59,21 @@ export function addArchive(worldDir, templatesDir, files) {
     const num = `C${String(++n).padStart(2, '0')}`;
     const prev = index.filter((x) => x.file === file).at(-1);
     const head = [`# ${file}`, prev ? `_Ny version av ${prev.cid}._` : null].filter(Boolean).join('\n');
-    writeFileSync(join(src, `${num}.md`), `${head}\n\n${f.text.trim()}\n`);
+    // images embedded in the file (photos, scans) go to _assets/sources/<cid>/ and are linked at the end of the source
+    const imgs = [];
+    for (const m of f.media ?? []) {
+      const d = join(worldDir, '_assets', 'sources', `${ARCHIVE}-${num}`);
+      mkdirSync(d, { recursive: true });
+      const name = `${ARCHIVE}-${num}-${basename(m)}`;
+      copyFileSync(m, join(d, name));
+      imgs.push(name);
+    }
+    const pics = imgs.length ? `\n\n## Bilder i filen\n${imgs.map((n) => `![[${n}]]`).join('\n')}` : '';
+    writeFileSync(join(src, `${num}.md`), `${head}\n\n${f.text.trim()}${pics}\n`);
     copyFileSync(f.path, join(src, 'original', `${num}-${file}`));
     index.push({ cid: `${ARCHIVE}-${num}`, num, file, hash });
     known.add(hash);
-    added.push({ cid: `${ARCHIVE}-${num}`, file, replaces: prev?.cid ?? null });
+    added.push({ cid: `${ARCHIVE}-${num}`, file, replaces: prev?.cid ?? null, ...(imgs.length ? { images: imgs.length } : {}) });
   }
   writeFileSync(INDEX(worldDir), ['num\tfile\thash', ...index.map((x) => `${x.num}\t${x.file}\t${x.hash}`)].join('\n') + '\n');
   return { added, skipped };

@@ -58,6 +58,11 @@ describe('scaffold', () => {
     const a2 = src('brev.txt', 'Kära syster Anna!');
     expect(addArchive(dir, TPL, [a2]).added).toEqual([{ cid: 'arkiv-C03', file: 'brev.txt', replaces: 'arkiv-C01' }]);
     expect(readArchive(dir).map((x) => x.num)).toEqual(['C01', 'C02', 'C03']);
+    const pic = src('foto.png', 'png-bytes');
+    const r = addArchive(dir, TPL, [{ ...src('med-foto.txt', 'Brev med foto'), media: [pic.path] }]);
+    expect(r.added[0]).toMatchObject({ cid: 'arkiv-C04', images: 1 });
+    expect(existsSync(join(dir, '_assets/sources/arkiv-C04/arkiv-C04-foto.png'))).toBe(true);
+    expect(read('_sources/arkiv/C04.md')).toMatch(/## Bilder i filen\n!\[\[arkiv-C04-foto\.png\]\]/);
   });
   it('converts the fixture files (txt in cp1252, docx)', () => {
     expect(existsSync(join(FIX, 'brev-johan-1868.docx'))).toBe(true);
@@ -282,5 +287,29 @@ describe('relation types in the tree', () => {
     expect(kinDetail(m, id('Anna Persdotter'), id('Per Andersson'))).toEqual({ type: 'biologisk', confidence: 'belagd', from: null });
     expect(kinDetail(m, id('Erik Svensson'), id('Anna Persdotter'))).toMatchObject({ confidence: 'trolig', from: '1866' });
     expect(kinDetail(m, id('Lill-Per'), id('Anna Persdotter'))).toMatchObject({ type: 'foster', confidence: 'hypotes' });
+  });
+});
+
+describe('GEDCOM export', () => {
+  it('writes people, families, sources and Swedish date qualifiers', async () => {
+    const { toGedcom, gedcomDate, gedcomName } = await import('../src/vault/gedcom.js');
+    expect(gedcomDate('1843-05-12')).toBe('12 MAY 1843');
+    expect(gedcomDate('ca 1843')).toBe('ABT 1843');
+    expect(gedcomDate('före 1850')).toBe('BEF 1850');
+    expect(gedcomDate('1840–45')).toBe('BET 1840 AND 1845');
+    expect(gedcomDate('midsommardagen 1844')).toBe('(midsommardagen 1844)');
+    expect(gedcomName('Anna Persdotter (1843–1910)')).toBe('Anna /Persdotter/');
+    apply(HUSFORHOR);
+    apply({ entities: [{ name: 'Kajsa Jansdotter', type: 'character', fields: { born: '1815' } }, { name: 'Greta Nu', type: 'character', fields: { living: true } }],
+      kin: [{ a: 'Kajsa Jansdotter', b: 'Anna Persdotter', kind: 'parent', role: 'mor' }, { a: 'Per Andersson', b: 'Kajsa Jansdotter', kind: 'spouse', from: '1840' }, { a: 'Anna Persdotter', b: 'Greta Nu', kind: 'parent', role: 'mor' }] }, 'arkiv-C02');
+    const g = toGedcom(model());
+    expect(g).toMatch(/^0 HEAD\n/);
+    expect(g).toMatch(/0 TRLR\n$/);
+    expect(g).not.toMatch(/Greta/);
+    expect(g).toMatch(/1 NAME Anna \/Persdotter\/\n(.*\n)*?1 BIRT\n2 DATE 12 MAY 1843\n2 PLAC Norrgården\n2 SOUR @S1@\n3 QUAY 3/);
+    expect(g).toMatch(/0 @F\d+@ FAM\n1 HUSB @I\d+@\n1 WIFE @I\d+@\n1 MARR\n2 DATE 1840\n1 CHIL @I\d+@/);
+    expect(g).toMatch(/0 @S1@ SOUR\n1 TITL Husförhör Kila 1840–1845\n1 PUBL Kila AI:12/);
+    expect(g).toMatch(/1 SEX F\n1 FAMC/);
+    expect(toGedcom(model(), { includeLiving: true })).toMatch(/Greta/);
   });
 });

@@ -177,6 +177,12 @@ A world made with `vault init-world "<World>" --kind genealogy` (`World.md`: `ki
 - **Lint** adds: `possible-duplicate`, `contradiction`, `parent-age`, `born-after-parent-death`, `died-before-born`, `one-sided-kin`, `maybe-living`.
 - **Open research questions** are Threads with `kind: forskningsfråga`, listing which record would settle them.
 - **`/become`** takes a date: `vault briefing "<World>" "<Name>" --at 1880-06-01`. The briefing includes age and family as of that date.
+- **Images in research files:** photos and scans embedded in a .docx are copied to `_assets/sources/arkiv-Cxx/` and linked at the end of the source under `## Bilder i filen`. A portrait of a known person can become their `image:`.
+- **GEDCOM export:** `vault export-gedcom "<World>" [out.ged] [--include-living]` writes GEDCOM 5.5.1 for other genealogy programs:
+  - people with name variants, birth and death (date, place, source and quality from `confidence`), and other dated events
+  - families built from parents and spouses, with the marriage year
+  - each archive source as a `SOUR` record
+  - Swedish date qualifiers become `ABT`/`BEF`/`AFT`/`BET … AND`. Living people are left out unless asked for.
 
 ## Patches and the `vault` tool
 **Agents never edit notes.** They read a chapter, or a conversation, and write one **JSON patch**. `node tools/vault.mjs apply` writes it into the notes, deterministically:

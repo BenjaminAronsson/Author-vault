@@ -11,6 +11,7 @@
 //   vault add-story   <World> <id> [--from <dir>] [--title …] [--order N] [--continuity c] [--canon book]
 //   vault import-books <World> <convert-output-dir> [B1,B3…]       add stories from an omnibus books.tsv
 //   vault add-archive <World> <folder|file…>                        genealogy: add new .txt/.docx/.md/.pdf research files
+//   vault export-gedcom <World> [out.ged] [--include-living]       genealogy: GEDCOM 5.5.1 for Disgen, MyHeritage…
 //
 // Needs the viewer's dependencies once:  npm install --prefix site
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdtempSync, rmSync } from 'node:fs';
@@ -132,13 +133,27 @@ if (cmd === 'plan') {
   const files = paths.filter((p) => OK.test(p)).map((p, i) => {
     const out = join(tmp, String(i));
     execFileSync('python3', ['-I', join(ROOT, '.claude/skills/import-book/convert.py'), p, out, '--whole'], { stdio: ['ignore', 'ignore', 'pipe'] }); // stderr is in the error if it fails
-    return { path: p, text: readFileSync(join(out, '_full.md'), 'utf8') };
+    const media = existsSync(join(out, 'media')) ? readdirSync(join(out, 'media')).map((n) => join(out, 'media', n)) : [];
+    return { path: p, text: readFileSync(join(out, '_full.md'), 'utf8'), media };
   });
-  rmSync(tmp, { recursive: true, force: true });
   const r = addArchive(dir, TEMPLATES, files);
-  for (const a of r.added) console.log(`✓ ${a.cid}  ${a.file}${a.replaces ? `  (new version of ${a.replaces})` : ''}`);
+  rmSync(tmp, { recursive: true, force: true });
+  for (const a of r.added) console.log(`✓ ${a.cid}  ${a.file}${a.images ? `  · ${a.images} image(s)` : ''}${a.replaces ? `  (new version of ${a.replaces})` : ''}`);
   console.log(`${r.added.length} added, ${r.skipped.length} already in the archive`);
+} else if (cmd === 'export-gedcom') {
+  const { readWorld } = await lib('vault/apply.js');
+  const { parseWorld } = await lib('parser/parse.js');
+  const { toGedcom } = await lib('vault/gedcom.js');
+  const includeLiving = bool('include-living');
+  const [w, out] = argv;
+  const model = parseWorld({ world: w, ...readWorld(worldDir(w)) });
+  if (!model.genealogy) die(`${w} is not a genealogy world (World.md kind: genealogy)`);
+  const ged = toGedcom(model, { includeLiving });
+  const file = out ?? `${w}.ged`;
+  writeFileSync(file, ged);
+  const n = (rx) => (ged.match(rx) ?? []).length;
+  console.log(`✓ ${file}: ${n(/^0 @I\d+@ INDI$/gm)} people, ${n(/^0 @F\d+@ FAM$/gm)} families, ${n(/^0 @S\d+@ SOUR$/gm)} sources${includeLiving ? '' : ' (living people left out)'}`);
 } else {
-  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 15).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 16).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
   process.exit(cmd ? 1 : 0);
 }
