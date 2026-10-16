@@ -10,7 +10,7 @@
 //   vault init-world  <World> [--kind genealogy]                    new world (folders, notes, local repo)
 //   vault add-story   <World> <id> [--from <dir>] [--title …] [--order N] [--continuity c] [--canon book]
 //   vault import-books <World> <convert-output-dir> [B1,B3…]       add stories from an omnibus books.tsv
-//   vault add-archive <World> <folder|file…>                        genealogy: add new .txt/.docx/.md/.pdf research files
+//   vault add-archive <World> <folder|file…>                        genealogy: add new .txt/.docx/.rtf/.md/.pdf research files
 //   vault add-media   <World> <file|folder…> [--depicts "A, B"] [--date 1931] [--place P] [--event E] [--caption …] [--source arkiv-C03]
 //                                                                  photos → compressed WebP + tagged Media notes, commits
 //   vault export-gedcom <World> [out.ged] [--include-living]       genealogy: GEDCOM 5.5.1 for Disgen, MyHeritage…
@@ -126,10 +126,10 @@ if (cmd === 'plan') {
   const { addArchive } = await lib('vault/scaffold.js');
   const [w, ...inputs] = argv;
   const dir = worldDir(w);
-  const OK = /\.(txt|md|docx|pdf)$/i;
+  const OK = /\.(txt|md|docx|rtf|pdf)$/i;
   const walk = (p) => (statSync(p).isDirectory() ? readdirSync(p).sort().filter((n) => !n.startsWith('.')).flatMap((n) => walk(join(p, n))) : [p]);
   const paths = (inputs.length ? inputs : die('folder or files')).flatMap((p) => walk(resolve(p)));
-  for (const p of paths.filter((p) => !OK.test(p))) console.log(`  ! skipped ${p} (${/\.doc$/i.test(p) ? 'old .doc: save it as .docx' : 'not .txt/.md/.docx/.pdf'})`);
+  for (const p of paths.filter((p) => !OK.test(p))) console.log(`  ! skipped ${p} (${/\.doc$/i.test(p) ? 'old .doc: save it as .docx' : 'not .txt/.md/.docx/.rtf/.pdf'})`);
   const tmp = mkdtempSync(join(tmpdir(), 'archive-'));
   const files = paths.filter((p) => OK.test(p)).map((p, i) => {
     const out = join(tmp, String(i));

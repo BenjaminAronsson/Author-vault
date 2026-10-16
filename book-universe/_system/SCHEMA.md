@@ -153,7 +153,7 @@ Chapter notes' `characters:` and `places:` frontmatter are the fallback for pres
 
 ## Archive & kinship (genealogy worlds)
 A world made with `vault init-world "<World>" --kind genealogy` (`World.md`: `kind: genealogy`) holds family history (släktforskning) instead of a book. Everything else in this schema still applies. The differences:
-- **Sources, not chapters.** Research files (.txt/.docx/.md/.pdf) are added with `vault add-archive`. Each becomes `_sources/arkiv/Cxx.md` (first line: the original file name, which is kept in `_sources/arkiv/original/`). `_sources/arkiv/index.tsv` lists them with a content hash, so re-adding a folder only adds new or changed files. A changed file becomes a new source, and the old one stays.
+- **Sources, not chapters.** Research files (.txt/.docx/.rtf/.md/.pdf) are added with `vault add-archive`. Each becomes `_sources/arkiv/Cxx.md` (first line: the original file name, which is kept in `_sources/arkiv/original/`). `_sources/arkiv/index.tsv` lists them with a content hash, so re-adding a folder only adds new or changed files. A changed file becomes a new source, and the old one stays.
   - The story `Stories/arkiv/Story.md` has `kind: archive`. Its chapter notes are **source notes**, with `source_kind` (husförhörslängd, dopbok, bouppteckning, brev, minnen…), `evidence`, `archive_ref` (volume/page, AID, bild-id), `file` and `dated` (when the document was written).
   - Claims cite `[[arkiv-Cxx]]`.
 - **The clock is the dates.** A timeline line's marker is the in-world date **as written**: `- **1843-05-12** · … ([[arkiv-C03]])`. Other examples are `1843`, `ca 1843`, `före 1850`, `efter 1850`, `mellan 1840 och 1845`, `1840–45`. Facts without a date use `odaterat`.

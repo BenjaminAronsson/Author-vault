@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a book (epub/pdf/txt/md) into chapter markdown files. Detects omnibus editions.
+"""Convert a book (epub/pdf/txt/md/docx/rtf) into chapter markdown files. Detects omnibus editions.
 
 usage: convert.py <book-file> <out-dir> [--pattern REGEX] [--books auto|off]
 
@@ -103,6 +103,56 @@ def docx_text(p):
     return "\n\n".join(out)
 
 
+RTF_SKIP = {"fonttbl", "colortbl", "stylesheet", "info", "pict", "object", "header", "footer", "headerl", "headerr",
+            "footerl", "footerr", "listtable", "listoverridetable", "rsidtbl", "generator", "xmlnstbl", "themedata",
+            "colorschememapping", "latentstyles", "datastore", "fldinst", "bkmkstart", "bkmkend", "pgdsctbl", "revtbl"}
+RTF_BREAK = {"par": "\n", "line": "\n", "sect": "\n", "page": "\n", "row": "\n", "tab": "\t", "cell": " | ",
+             "emdash": "—", "endash": "–", "bullet": "•", "lquote": "‘", "rquote": "’", "ldblquote": "“", "rdblquote": "”"}
+
+
+def rtf_text(p):
+    """Plain text of an .rtf (genealogy programs export reports as RTF). Stdlib only: \\'hh in the
+    document's code page, \\uN unicode, paragraphs, table cells as "a | b"; fonts, styles, pictures skipped."""
+    s = p.read_bytes().decode("latin-1")
+    cp = re.search(r"\\ansicpg(\d+)", s)
+    enc = f"cp{cp.group(1)}" if cp else "cp1252"
+    out, stack, skip, uc, pending = [], [], False, 1, 0
+    for m in re.finditer(r"\\([a-z]{1,32})(-?\d{1,10})? ?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|([^\\{}\r\n]+)", s, re.I):
+        word, arg, hexc, sym, brace, txt = m.groups()
+        if brace == "{":
+            stack.append((skip, uc))
+        elif brace == "}":
+            skip, uc = stack.pop() if stack else (False, 1)
+        elif sym == "*":
+            skip = True  # {\* …} destinations are optional extras
+        elif pending and (hexc or txt or sym):  # characters that stand in for the preceding \uN
+            if txt and len(txt) > pending:
+                txt = txt[pending:]; pending = 0
+            else:
+                pending -= len(txt) if txt else 1
+                continue
+        if skip or brace or sym == "*":
+            continue
+        if word:
+            word = word.lower()
+            if word in RTF_SKIP:
+                skip = True
+            elif word == "uc":
+                uc = int(arg or 1)
+            elif word == "u":
+                out.append(chr(int(arg) % 65536)); pending = uc
+            elif word in RTF_BREAK:
+                out.append(RTF_BREAK[word])
+        elif hexc:
+            out.append(bytes([int(hexc, 16)]).decode(enc, errors="replace"))
+        elif sym:
+            out.append({"~": "\u00a0", "-": "", "_": "-"}.get(sym, sym))
+        elif txt:
+            out.append(txt)
+    text = "".join(out).replace(" | \n", "\n")
+    return "\n\n".join(l.strip() for l in text.split("\n"))
+
+
 def pdf_text(p):
     return subprocess.run(["pdftotext", "-layout", str(p), "-"], capture_output=True, text=True, check=True).stdout
 
@@ -191,7 +241,7 @@ def main():
     src, out = Path(a.book), Path(a.out)
     ext = src.suffix.lower()
     text = (epub_text(src) if ext == ".epub" else pdf_text(src) if ext == ".pdf" else docx_text(src) if ext == ".docx"
-            else src.read_bytes().decode("utf-8", errors="ignore") if ext != ".txt" else read_txt(src))
+            else rtf_text(src) if ext == ".rtf" else src.read_bytes().decode("utf-8", errors="ignore") if ext != ".txt" else read_txt(src))
     text = clean(text)
     out.mkdir(parents=True, exist_ok=True)
     (out / "_full.md").write_text(text, encoding="utf-8")

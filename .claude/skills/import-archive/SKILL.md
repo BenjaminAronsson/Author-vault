@@ -1,6 +1,6 @@
 ---
 name: import-archive
-description: Import genealogy research (släktforskning) — a folder of .txt/.docx/.md/.pdf files with transcribed records, letters, memoirs and notes — into a genealogy world, where the timeline is real dates and kinship drives a family tree. Re-run it on a growing folder to add only new or changed files. Use when the user wants to add family-history / genealogy / släktforskning files, not a book.
+description: Import genealogy research (släktforskning) — a folder of .txt/.docx/.rtf/.md/.pdf files with transcribed records, letters, memoirs and notes — into a genealogy world, where the timeline is real dates and kinship drives a family tree. Re-run it on a growing folder to add only new or changed files. Use when the user wants to add family-history / genealogy / släktforskning files, not a book.
 argument-hint: <folder-or-files> <World>
 ---
 # /import-archive
@@ -18,7 +18,8 @@ A genealogy world has no chapters. Each file is a **source**, cited as `[[arkiv-
    ```
    node tools/vault.mjs add-archive "<World>" "<folder-or-files>"
    ```
-   - .docx is converted with the standard library, and .txt in old encodings (cp1252) is handled.
+   - .docx and .rtf (e.g. reports exported from Disgen and other genealogy programs) are converted with the standard library, and .txt in old encodings (cp1252) is handled.
+   - **One big report** (an anfäder/ättlingar table with hundreds of people) is too much for one genealogist agent. Split the converted text by generation (≤ ~9k words per file), add the parts, and copy the original into `_sources/arkiv/original/`.
    - Old `.doc` files are skipped: ask the user to save them as `.docx`.
    - Files already imported with identical content are skipped. A changed file becomes a new source marked as a new version of the old one, which stays read-only.
    - Originals are kept in `_sources/arkiv/original/`.
