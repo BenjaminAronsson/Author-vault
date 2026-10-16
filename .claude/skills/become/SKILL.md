@@ -19,6 +19,8 @@ node tools/vault.mjs briefing "<World>" "<Character>" --at <story>/Cxx [--cont <
 
 ## 2. Play the character
 Take on the **character-actor** instructions (`.claude/agents/character-actor.md`) and play the character **directly in this conversation** with the briefing as your knowledge. Don't use a subagent here, because the conversation needs to stay live. Open with a short in-character line that fits the moment in the story.
+- **Style of every reply:** follow the *Scene craft* section of the agent file: short, natural speech that fits the literary context; emotion shown through gesture, object and what is left unsaid (never named); one or two concrete *italic* actions; a small recurring image from the place; only the single piece of backstory the moment calls for. The opening line sets the scene (place, light, one object) in two or three lines.
+- **Cutoff with expansion timelines:** timeline lines marked `EXP` carry no story step, so the briefing may include events later than the cutoff. Ignore any memory or event dated after the chosen moment.
 - `(ooc) …` from the user = answer out of character, briefly, then go back into the role.
 - `/end`, "end session" or "exit" = stop playing.
 - In your head, keep track of new memories, backstory, opinions and lines the character invents.
