@@ -2,6 +2,7 @@
   // "You've read up to …": book + chapter pickers, a labelled books strip and a numbered chapter strip.
   import { store } from '../lib/store.svelte.js';
   import FollowPicker from './FollowPicker.svelte';
+  import StepPicker from './StepPicker.svelte';
 
   const seq = $derived(store.sequence);
   const ch = (cid) => store.model.chapters[cid];
@@ -9,6 +10,12 @@
   const bookSteps = $derived(book ? seq.slice(book.start, book.end + 1).map((cid, k) => ({ cid, i: book.start + k })) : []);
   const total = $derived(seq.length);
   const label = (cid) => { const c = ch(cid); if (!c) return ''; return `${c.story === book?.story ? `Chapter ${c.num}` : `${store.model.stories[c.story]?.title ?? c.story} · ${c.num}`} — ${c.title}`; };
+  const chapterOptions = $derived(bookSteps.map(({ cid }) => ({
+    id: cid,
+    label: `${label(cid)}${ch(cid).canon === 'expansion' ? ' (expansion)' : ''}`,
+    search: ch(cid).title
+  })));
+  const dateOptions = $derived(seq.map((cid) => ({ id: cid, label: cid, search: ch(cid).title })));
   const density = $derived.by(() => {
     const d = Object.fromEntries(seq.map((c) => [c, ch(c).events.length + ch(c).characters.length / 3]));
     for (const e of Object.values(store.model.entities)) for (const t of e.timeline ?? []) if (t.step in d) d[t.step] += 0.5;
@@ -49,7 +56,7 @@
   });
 
   function pickBook(ev) { stop(); const b = store.books[+ev.currentTarget.value]; if (b) store.setAt(seq[b.start]); }
-  function pickChapter(ev) { stop(); store.setAt(ev.currentTarget.value); }
+  function pickChapter(cid) { stop(); store.setAt(cid); }
 
   let strip = $state(null);
   let dragging = false;
@@ -109,9 +116,7 @@
         {#if undated.length}<option value={-1} disabled>undated</option>{/if}
         {#each decades as d (d)}<option value={d}>{d}s</option>{/each}
       </select>
-      <select class="cp" aria-label="Date" value={seq[store.idx]} onchange={pickChapter}>
-        {#each seq as cid (cid)}<option value={cid}>{cid}{busy[cid] ? ` · ${busy[cid]}` : ''}</option>{/each}
-      </select>
+      <StepPicker options={dateOptions} value={seq[store.idx]} onpick={pickChapter} placeholder="Search dates…" label="Search dates" />
     </div>
     {#if caption}
       <div class="cap" aria-live="polite"><strong>{caption.name}</strong> {caption.text}{#if !caption.on}<span class="muted"> · nothing recorded then</span>{/if}</div>
@@ -162,9 +167,7 @@
           <option value={k}>{b.branch ? '⑂ ' : ''}{b.title}{k < store.books.indexOf(book) ? ' ✓' : ''}</option>
         {/each}
       </select>
-      <select class="cp" aria-label="Chapter" value={seq[store.idx]} onchange={pickChapter}>
-        {#each bookSteps as { cid } (cid)}<option value={cid}>{label(cid)}{ch(cid).canon === 'expansion' ? ' (expansion)' : ''}</option>{/each}
-      </select>
+      <StepPicker options={chapterOptions} value={seq[store.idx]} onpick={pickChapter} placeholder="Search chapters…" label="Search chapters" />
     </div>
     {#if caption}
       <div class="cap" aria-live="polite"><strong>{caption.name}</strong> {caption.text}{#if !caption.on}<span class="muted"> · off the page</span>{/if}</div>
@@ -217,16 +220,19 @@
 {/if}
 
 <style>
-  .scrub { display: grid; grid-template-columns: minmax(15rem, 22rem) auto 1fr; gap: .8rem; align-items: center; padding: .55rem 1rem .6rem; background: var(--card); border-top: 1px solid var(--rule); }
+  .scrub { display: grid; grid-template-columns: 22rem 9rem minmax(0, 1fr); gap: .8rem; align-items: start; padding: .55rem 1rem .6rem; background: var(--card); border-top: 1px solid var(--rule); }
+  .here, .ctrl, .strips { min-width: 0; }
   .label { margin-bottom: .25rem; }
   .pickers { display: flex; gap: .3rem; }
   select { font: inherit; font-size: .85rem; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; padding: .2rem .3rem; min-width: 0; }
   .bk { flex: 0 1 45%; font-weight: 600; }
-  .cp { flex: 1 1 55%; }
   .pos { margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ctrl { display: flex; align-items: center; gap: .2rem; flex-wrap: wrap; max-width: 15rem; }
+  .ctrl { display: grid; grid-template-columns: repeat(3, 2.3rem); justify-content: center; gap: .2rem; width: 9rem; max-width: 100%; }
+  .ctrl > .follow { grid-column: 1 / -1; }
   .follow { display: flex; gap: .2rem; width: 100%; }
   .follow > :first-child { flex: 1; min-width: 0; }
+  .follow :global(.fp), .follow :global(.fp input), .follow :global(.fp .chosen) { min-width: 0; }
+  .follow .speed { flex: 0 1 4.5rem; min-width: 0; }
   .cap { margin-top: .2rem; font-size: .8rem; line-height: 1.3; max-height: 2.6em; overflow: hidden; color: var(--ink-2); }
   .cap strong { color: var(--accent); }
   .nav { padding: .2rem .45rem; }
@@ -263,7 +269,7 @@
   .mark.cur { opacity: 1; width: 5px; margin-left: -2px; background: var(--accent); }
   .axis .pin { top: -14px; transform: translateX(-50%); }
   @media (max-width: 800px) {
-    .scrub { grid-template-columns: minmax(0, 1fr) auto; gap: .4rem .6rem; padding: .4rem .6rem calc(.45rem + env(safe-area-inset-bottom)); }
+    .scrub { grid-template-columns: minmax(0, 1fr) 9rem; gap: .4rem .6rem; padding: .4rem .6rem calc(.45rem + env(safe-area-inset-bottom)); }
     .here { min-width: 0; }
     .strips { grid-column: 1 / -1; }
     .pos { display: none; }
