@@ -13,6 +13,7 @@
 //   vault add-archive <World> <folder|file…>                        genealogy: add new .txt/.docx/.rtf/.md/.pdf research files
 //   vault add-media   <World> <file|folder…> [--depicts "A, B"] [--date 1931] [--place P] [--event E] [--caption …] [--source arkiv-C03]
 //                                                                  photos → compressed WebP + tagged Media notes, commits
+//   vault merge       <World> <keep> <drop> [--why …]               one entity under two notes: fold drop into keep, relink, commit
 //   vault export-gedcom <World> [out.ged] [--include-living]       genealogy: GEDCOM 5.5.1 for Disgen, MyHeritage…
 //
 // Needs the viewer's dependencies once:  npm install --prefix site
@@ -162,6 +163,14 @@ if (cmd === 'plan') {
   }
   console.log(`${files.length} photo(s), ${(bin / 1048576).toFixed(1)} → ${(bout / 1048576).toFixed(1)} MB. Tag who is in each: edit \`depicts:\` in the Media notes.`);
   if (!noCommit) execFileSync(join(ROOT, 'tools/world-repo.sh'), ['commit', w, `${files.length} photo(s) added`], { stdio: 'inherit' });
+} else if (cmd === 'merge') {
+  const { World } = await lib('vault/apply.js');
+  const { mergeNotes } = await lib('vault/merge.js');
+  const [w, keep, drop] = argv;
+  if (!drop) die('usage: vault merge <World> "<keep>" "<drop>" [--why "…"] [--no-commit]');
+  const r = mergeNotes(new World(worldDir(w), TEMPLATES), keep, drop, { why: flag('why', '') });
+  console.log(`✓ ${r.drop} → ${r.keep}: ${r.relinked} note(s) relinked${r.contradictions ? `, ${r.contradictions} contradiction(s) recorded` : ''}`);
+  if (!bool('no-commit')) execFileSync(join(ROOT, 'tools/world-repo.sh'), ['commit', w, `merge: ${r.drop} → ${r.keep}`], { stdio: 'inherit' });
 } else if (cmd === 'export-gedcom') {
   const { readWorld } = await lib('vault/apply.js');
   const { parseWorld } = await lib('parser/parse.js');
@@ -176,6 +185,6 @@ if (cmd === 'plan') {
   const n = (rx) => (ged.match(rx) ?? []).length;
   console.log(`✓ ${file}: ${n(/^0 @I\d+@ INDI$/gm)} people, ${n(/^0 @F\d+@ FAM$/gm)} families, ${n(/^0 @S\d+@ SOUR$/gm)} sources${includeLiving ? '' : ' (living people left out)'}`);
 } else {
-  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 16).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
+  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 17).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
   process.exit(cmd ? 1 : 0);
 }

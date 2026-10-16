@@ -10,3 +10,4 @@ argument-hint: <World>
 3. **Judgment items:** only if there are any, run **continuity-keeper** with the output of `node tools/vault.mjs lint "$ARGUMENTS" --json`, its judgment items only. Then re-run lint and show what changed.
 4. **Commit** the fixes: `tools/world-repo.sh commit "$ARGUMENTS" "world-check fixes"`.
 5. **Coverage:** `node site/scripts/build-data.mjs "$ARGUMENTS"` prints how complete the world is for the viewer (relations over time, places, portraits, voice).
+6. **Merges the author approves** (genealogy: the continuity-keeper only recommends): `node tools/vault.mjs merge "<World>" "<keep>" "<drop>" --why "<reason>"` folds the dropped note into the kept one (facts, kin, timeline, voice; differing facts become contradictions), relinks the whole world and commits. One merge per commit, so each can be reverted.

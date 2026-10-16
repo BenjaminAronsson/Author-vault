@@ -1,6 +1,7 @@
 <script>
   // "You've read up to …": book + chapter pickers, a labelled books strip and a numbered chapter strip.
   import { store } from '../lib/store.svelte.js';
+  import FollowPicker from './FollowPicker.svelte';
 
   const seq = $derived(store.sequence);
   const ch = (cid) => store.model.chapters[cid];
@@ -29,8 +30,6 @@
   $effect(() => () => clearTimeout(timer));
 
   // Follow: who the views keep in focus, and a one-line caption of what just happened to them
-  const people = $derived(Object.values(store.model.entities).filter((e) => e.type === 'character' && store.visible(e.id))
-    .sort((a, b) => a.title.localeCompare(b.title)));
   const caption = $derived.by(() => {
     const f = store.follow;
     if (!f || !store.snap) return null;
@@ -126,11 +125,8 @@
     <button class="btn play" onclick={play} aria-pressed={playing} aria-label={playing ? 'Pause' : 'Play through time'} title={playing ? 'Pause' : 'Play: step through date by date'}>{playing ? '❚❚' : '▶'}</button>
     <button class="btn ghost nav" aria-label="Next date" title="Next date (→)" onclick={() => { stop(); store.move(1); }} disabled={store.idx >= total - 1}>▶</button>
     <div class="follow" data-tour="follow">
-      <select aria-label="Follow a person" value={store.follow ?? ''} onchange={(ev) => store.setFollow(ev.currentTarget.value)}>
-        <option value="">Follow…</option>
-        {#each people as p (p.id)}<option value={p.id}>👁 {p.title}</option>{/each}
-      </select>
-      <select aria-label="Playback speed" bind:value={store.speed}><option value={3200}>slow</option><option value={1800}>normal</option><option value={900}>fast</option></select>
+      <FollowPicker up label="Follow a person" />
+      <select class="speed" aria-label="Playback speed" bind:value={store.speed}><option value={3200}>slow</option><option value={1800}>normal</option><option value={900}>fast</option></select>
     </div>
   </div>
 
@@ -182,11 +178,8 @@
     <button class="btn play" onclick={play} aria-pressed={playing} aria-label={playing ? 'Pause' : 'Play the story'} title={playing ? 'Pause' : 'Play: step through chapter by chapter'}>{playing ? '❚❚' : '▶'}</button>
     <button class="btn ghost nav" aria-label="Next chapter" title="Next chapter (→)" onclick={() => { stop(); store.move(1); }} disabled={store.idx >= total - 1}>▶</button>
     <div class="follow" data-tour="follow">
-      <select aria-label="Follow a character" value={store.follow ?? ''} onchange={(ev) => store.setFollow(ev.currentTarget.value)} title="Keep one character in focus while you move through the story">
-        <option value="">Follow…</option>
-        {#each people as p (p.id)}<option value={p.id}>👁 {p.title}</option>{/each}
-      </select>
-      <select aria-label="Playback speed" bind:value={store.speed} title="Playback speed">
+      <FollowPicker up label="Follow a character" />
+      <select class="speed" aria-label="Playback speed" bind:value={store.speed} title="Playback speed">
         <option value={3200}>slow</option><option value={1800}>normal</option><option value={900}>fast</option>
       </select>
     </div>
@@ -233,7 +226,7 @@
   .pos { margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ctrl { display: flex; align-items: center; gap: .2rem; flex-wrap: wrap; max-width: 15rem; }
   .follow { display: flex; gap: .2rem; width: 100%; }
-  .follow select:first-child { flex: 1; min-width: 0; }
+  .follow > :first-child { flex: 1; min-width: 0; }
   .cap { margin-top: .2rem; font-size: .8rem; line-height: 1.3; max-height: 2.6em; overflow: hidden; color: var(--ink-2); }
   .cap strong { color: var(--accent); }
   .nav { padding: .2rem .45rem; }
@@ -279,7 +272,7 @@
   @media (max-width: 560px) {
     .label, .cap { display: none; }
     .ctrl { max-width: 11rem; }
-    .follow select + select { display: none; } /* speed: the default on phones */
+    .follow .speed { display: none; } /* speed: the default on phones */
     .nav { min-width: 40px; min-height: 40px; }
   }
 </style>

@@ -8,6 +8,7 @@
   import Avatar from './Avatar.svelte';
   import PanZoom from './PanZoom.svelte';
   import EntityLink from './EntityLink.svelte';
+  import FollowPicker from './FollowPicker.svelte';
 
   let { places } = $props();
   const worldId = $derived(store.model.worldEntity);
@@ -27,7 +28,6 @@
     return [store.model.entities[worldId], ...out].filter(Boolean);
   });
   const inFrame = $derived(places.filter((p) => p.id !== fid && frameOf(p) === fid));
-  const pinned = $derived(inFrame.filter((p) => p.map));
   const tray = $derived(inFrame.filter((p) => !p.map));
   const url = $derived((store.version, frame?.mapImage ? store.pending.find((p) => p.path === frame.mapImage)?.url ?? store.model.imageUrls?.[frame.mapImage] : null));
   const sketch = $derived(!url);
@@ -123,12 +123,36 @@
 
   // ---- people on the map (tokens travel between places) ---------------------------------------------
   const follow = $derived(store.follow ?? '');
+  const focusPlaceIds = $derived.by(() => {
+    const ids = new Set();
+    if (!follow) return ids;
+    for (let i = 0; i <= store.idx; i++) {
+      const place = store.snaps[i]?.presence[follow]?.place;
+      if (place) ids.add(place);
+    }
+    return ids;
+  });
+  const autoPositions = $derived.by(() => {
+    const unplaced = inFrame.filter((p) => focusPlaceIds.has(p.id) && !p.map);
+    const cols = Math.max(1, Math.ceil(Math.sqrt(unplaced.length)));
+    const rows = Math.max(1, Math.ceil(unplaced.length / cols));
+    return Object.fromEntries(unplaced.map((p, i) => [p.id, {
+      x: cols === 1 ? 0.5 : 0.12 + (i % cols) * 0.76 / (cols - 1),
+      y: rows === 1 ? 0.5 : 0.14 + Math.floor(i / cols) * 0.72 / (rows - 1),
+    }]));
+  });
   const pinFor = (placeId) => { // nearest pinned place in this frame: the place itself, or an ancestor
     let cur = store.model.entities[placeId], guard = 0;
-    while (cur && guard++ < 20) { if (cur.map && frameOf(cur) === fid) return cur; if (cur.id === fid) return null; cur = cur.partOf ? store.model.entities[cur.partOf] : null; }
+    while (cur && guard++ < 20) {
+      const map = cur.map ?? autoPositions[cur.id];
+      if (map && frameOf(cur) === fid) return { ...cur, map };
+      if (cur.id === fid) return null;
+      cur = cur.partOf ? store.model.entities[cur.partOf] : null;
+    }
     return null;
   };
-  const posOf = (p) => (drag?.id === p.id && drag.x != null ? drag : p.map);
+  const posOf = (p) => (drag?.id === p.id && drag.x != null ? drag : p.map ?? autoPositions[p.id]);
+  const visiblePins = $derived(inFrame.filter((p) => p.map || focusPlaceIds.has(p.id)));
   // Big casts: tokens only for who's on the page now (and whoever you follow); the rest become a count per pin.
   const crowd = $derived(Object.keys(store.snap?.presence ?? {}).length > 120);
   const counts = $derived.by(() => {
@@ -169,7 +193,6 @@
     return pts;
   });
   const followHere = $derived(follow && store.snap?.presence[follow] ? pinFor(store.snap.presence[follow].place) : null);
-  const chars = $derived(Object.values(store.model.entities).filter((e) => e.type === 'character' && store.visible(e.id)));
 </script>
 
 <div class="toolbar">
@@ -179,7 +202,7 @@
       {#if c.id === fid}<strong>{i ? c.title : 'World map'}</strong>{:else}<button class="link" onclick={() => (frameId = c.id === worldId ? null : c.id)}>{i ? c.title : 'World map'}</button>{/if}
     {/each}
   </nav>
-  <label class="small">Follow <select value={follow} onchange={(ev) => store.setFollow(ev.currentTarget.value)}><option value="">nobody</option>{#each chars as c (c.id)}<option value={c.id}>{c.title}</option>{/each}</select></label>
+  <span class="small fl">Follow <FollowPicker placeholder="type a name…" label="Follow a person on the map" /></span>
   <span class="grow"></span>
   <button class="btn" class:on={arranging} aria-pressed={arranging} onclick={() => (arranging = !arranging)}>✎ {arranging ? 'Done arranging' : 'Arrange'}</button>
 </div>
@@ -220,7 +243,7 @@
         {/key}
       {/if}
     </svg>
-    {#each pinned as p (p.id)}
+    {#each visiblePins as p (p.id)}
       {@const m = posOf(p)}
       <div class="pin" data-pin={p.id} class:dragging={drag?.id === p.id} class:future={store.isFuture(p.id)} class:onpath={path.some((q) => q.id === p.id)}
         style:left={`${m.x * 100}%`} style:top={`${m.y * 100}%`} style:--k={k}>
@@ -248,7 +271,7 @@
 {#if drag?.fromTray && drag.x == null && drag.ghost}
   <div class="floating chip" style:left={`${drag.ghost.cx}px`} style:top={`${drag.ghost.cy}px`}>⠿ {store.name(drag.id)}</div>
 {/if}
-{#if !pinned.length && !arranging}<p class="small muted">No places have a spot on this map yet. Click <strong>✎ Arrange</strong> to place them{tray.length ? ` (${tray.length} waiting)` : ''}.</p>{/if}
+{#if !visiblePins.length && !arranging}<p class="small muted">No places have a spot on this map yet. Click <strong>✎ Arrange</strong> to place them{tray.length ? ` (${tray.length} waiting)` : ''}.</p>{/if}
 {#if follow && store.snap?.presence[follow] && !followHere}<p class="small muted">{store.name(follow)} is at {store.name(store.snap.presence[follow].place)}, which isn't on this map yet.</p>{/if}
 {#if path.length}<p class="small muted">Path of {store.name(follow)}: {path.map((p) => `${store.name(p.id)} (${p.step})`).join(' → ')}</p>{/if}
 
@@ -257,7 +280,6 @@
   .crumbs { display: flex; gap: .35rem; align-items: center; }
   .grow { flex: 1; }
   .btn.on { background: var(--accent); color: var(--paper); border-color: var(--accent); }
-  select { font: inherit; background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; margin-left: .3rem; }
   .arrange { display: grid; gap: .5rem; margin-bottom: .6rem; padding: .7rem .9rem; }
   .tray { display: flex; gap: .3rem; flex-wrap: wrap; }
   .tchip { border: 1px dashed var(--ink-3); background: var(--paper); border-radius: 999px; padding: .15rem .6rem; font-size: .8rem; cursor: grab; touch-action: none; }
@@ -277,6 +299,7 @@
   .compass small { font: 600 .7rem var(--serif); }
   .ftitle { position: absolute; left: 3%; bottom: 4%; font: italic 1.4rem var(--serif); color: var(--ink-3); }
   .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .fl { display: inline-flex; align-items: center; gap: .3rem; }
   .trail { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 8 5; stroke-linejoin: round; }
   .leg { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw ease-in-out forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }

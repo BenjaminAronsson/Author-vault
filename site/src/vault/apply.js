@@ -24,7 +24,7 @@ const HEADERS = {
 /** One spelling per name: straight apostrophes/quotes, no characters that break file names or links. */
 export const canonName = (s) => String(s).replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
 const safeName = (s) => canonName(s).replace(/[\\/:*?"<>|#^[\]]/g, '').trim();
-const link = (n) => `[[${canonName(n)}]]`;
+const link = (n) => `[[${safeName(n)}]]`; // the note's file name: "Håkan (VII:43)" is saved as "Håkan (VII43)"
 const lifeYear = (s) => String(s).match(/\((\d{3,4})\b[^)]*\)\s*$/)?.[1];
 /** The note an entity means: its own name, else one of its aliases, unless that note carries other life years
  *  ("Alma Andersdotter (1801–1850)" is not "Alma Andersdotter (1873–1957)"). Genealogy passes no bare given names: namesakes share them. */
@@ -72,7 +72,7 @@ export class World {
   write(rel, text) { mkdirSync(dirname(this.path(rel)), { recursive: true }); writeFileSync(this.path(rel), text.endsWith('\n') ? text : text + '\n'); this.changed.add(rel); }
   /** existing note path for a name or alias (case-insensitive), else null */
   find(name) {
-    const id = this.model.nameIndex[canonName(name).toLowerCase()] ?? this.model.nameIndex[String(name).toLowerCase().trim()];
+    const id = this.model.nameIndex[canonName(name).toLowerCase()] ?? this.model.nameIndex[String(name).toLowerCase().trim()] ?? this.model.nameIndex[safeName(name).toLowerCase()];
     return id ? this.model.entities[id]?.path ?? null : null;
   }
   template(type) {

@@ -5,6 +5,7 @@
   import { wikilinks, chapterRef, stripLinks } from '../parser/markdown.js';
   import WorldMap from '../components/WorldMap.svelte';
   import TravelGraph from '../components/TravelGraph.svelte';
+  import FollowPicker from '../components/FollowPicker.svelte';
   import { parseDate } from '../lib/dates.js';
   import PanZoom from '../components/PanZoom.svelte';
 
@@ -43,6 +44,7 @@
     }
     return Object.entries(m).map(([k, who]) => ({ a: k.split('|')[0], b: k.split('|')[1], who: [...who] }));
   });
+  const graphMoves = $derived.by(() => store.follow ? moves.filter((m) => m.who.includes(store.follow)) : moves);
 
   // in_world is a year (fantasy calendars: -300, 1203) or, in genealogy worlds, a date as written ("1867-11-02", "ca 1850")
   const inWorldYear = (v) => { const n = Number(v); if (isFinite(n)) return n; const d = parseDate(v); return d ? d.sort / 10000 : NaN; };
@@ -91,12 +93,16 @@
       </div>
       {#if mapMode === 'map'}<WorldMap {places} />{/if}
       {#if mapMode === 'graph'}
-        {@const active = places.length > 25 ? places.filter((p) => moves.some((m) => m.a === p.id || m.b === p.id) || whoAt(p.id).length) : places}
+        {@const active = places.length > 25 ? places.filter((p) => graphMoves.some((m) => m.a === p.id || m.b === p.id) || (store.follow ? whoAt(p.id).includes(store.follow) : whoAt(p.id).length)) : places}
+        <div class="graphbar small">
+          <span>Follow <FollowPicker placeholder="type a name…" label="Follow a person in the travel graph" /></span>
+          {#if store.follow}<span class="muted">Showing {store.name(store.follow)}'s journeys</span>{:else}<span class="muted">Showing everyone's journeys</span>{/if}
+        </div>
         <div class="small muted tspan">Journeys in
           <select bind:value={tspan}>{#if store.books.length > 1}<option value="book">this book</option>{/if}<option value="recent">the last 15 chapters</option><option value="all">the whole story so far</option></select>
           {#if active.length < places.length} · showing {active.length} of {places.length} places (the ones visited){/if}
         </div>
-        <TravelGraph places={active} {moves} {parentOf} {whoAt} />
+        <TravelGraph places={active} moves={graphMoves} {parentOf} {whoAt} />
       {/if}
     </section>
     <div class="grid2">
@@ -119,10 +125,10 @@
       </section>
       <section class="card">
         <div class="label">Journeys {tspan === 'book' ? 'in this book' : tspan === 'recent' ? 'in the last 15 chapters' : 'so far'}</div>
-        {#each (allMoves ? moves : [...moves].sort((a, b) => b.who.length - a.who.length).slice(0, 40)) as m, mi (mi)}
+        {#each (allMoves ? graphMoves : [...graphMoves].sort((a, b) => b.who.length - a.who.length).slice(0, 40)) as m, mi (mi)}
           <div class="move small"><EntityLink id={m.a} /> ⇄ <EntityLink id={m.b} />
             <span class="here">{#each m.who.slice(0, 5) as w (w)}<span title={store.name(w)}><Avatar id={w} size={20} /></span>{/each}
-        {#if moves.length > 40}<button class="link small" onclick={() => (allMoves = !allMoves)}>{allMoves ? 'Show the 40 busiest' : `Show all ${moves.length} journeys`}</button>{/if}{#if m.who.length > 5}<span class="more">+{m.who.length - 5}</span>{/if}</span></div>
+        {#if graphMoves.length > 40}<button class="link small" onclick={() => (allMoves = !allMoves)}>{allMoves ? 'Show the 40 busiest' : `Show all ${graphMoves.length} journeys`}</button>{/if}{#if m.who.length > 5}<span class="more">+{m.who.length - 5}</span>{/if}</span></div>
         {:else}<p class="muted small">No one has moved between places yet.</p>{/each}
         <p class="small muted">From <code>at:</code> tags, or each chapter's places when tags are missing.</p>
       </section>
@@ -180,6 +186,7 @@
   .tabs { display: flex; gap: .3rem; }
   .tabs .on { background: var(--ink); color: var(--paper); }
   .tspan { margin: .6rem 0 .2rem; }
+  .graphbar { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-top: .7rem; }
   .tspan select { font: inherit; background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; }
   .grid2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 1rem; align-items: start; }
   .place { display: flex; gap: .6rem; align-items: center; padding: .35rem 0; }

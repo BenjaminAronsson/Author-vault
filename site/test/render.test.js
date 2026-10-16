@@ -170,3 +170,34 @@ describe('the family tree grows with the bookmark', async () => {
     } finally { unmount(app); target.remove(); }
   });
 });
+
+describe('focused genealogy journeys', async () => {
+  const { store } = await import('../src/lib/store.svelte.js');
+  const { default: App } = await import('../src/App.svelte');
+  it('shows a followed person\'s unplaced locations and filters the travel graph', async () => {
+    localStorage.setItem('tour:done', '1');
+    const model = WORLDS.Norrgården();
+    const person = model.nameIndex['anna persdotter'];
+    store.model = model;
+    store.future = 'hide';
+    store.at = store.sequence.at(-1);
+    store.follow = person;
+    const target = document.createElement('div');
+    document.body.append(target);
+    const app = mount(App, { target });
+    try {
+      store.go('places');
+      await settle();
+      expect(target.querySelectorAll('.pin').length).toBeGreaterThan(0);
+      target.querySelector('button[title="How places connect through characters\' journeys (laid out automatically)"]')?.click();
+      await settle();
+      expect(target.querySelector('.tg')).not.toBeNull();
+      expect(target.textContent).toContain(`Showing ${model.entities[person].title}'s journeys`);
+    } finally {
+      store.follow = null;
+      store.model = null;
+      unmount(app);
+      target.remove();
+    }
+  });
+});

@@ -22,7 +22,7 @@
   const tokens = $derived.by(() => {
     const at = Object.fromEntries(layout.nodes.map((n) => [n.id, n]));
     const by = {};
-    for (const n of layout.nodes) for (const w of whoAt(n.id)) (by[n.id] ??= []).push(w);
+    for (const n of layout.nodes) for (const w of whoAt(n.id).filter((id) => !store.follow || id === store.follow)) (by[n.id] ??= []).push(w);
     const out = [];
     for (const [pl, list] of Object.entries(by)) {
       list.sort((a, b) => (a === store.follow ? -1 : b === store.follow ? 1 : store.name(a).localeCompare(store.name(b))));

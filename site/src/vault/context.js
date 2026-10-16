@@ -60,7 +60,10 @@ export function contextPack(model, { cid, sourcePath, sourceText, forWho = 'char
     const people = Object.values(model.entities).filter((e) => e.type === 'character');
     const first = (n) => String(n).replace(/\s*\(.*$/, '').split(/\s+/)[0]?.toLowerCase();
     const words = new Set(sourceText.toLowerCase().match(/[\p{L}-]+/gu) ?? []);
-    for (const p of people) if ([p.title, ...(p.aliases ?? [])].some((n) => words.has(first(n)))) hits.push({ id: p.id, count: 0 });
+    // rank by how much of the name the source contains: "Anna Britta Bengtsdotter" before every other Anna
+    const score = (p) => Math.max(...[p.title, ...(p.aliases ?? [])].map((n) => { const w = String(n).replace(/\s*\(.*$/, '').toLowerCase().match(/[\p{L}-]+/gu) ?? []; return w.filter((x) => words.has(x)).length / (w.length || 1) + w.filter((x) => words.has(x)).length / 100; }));
+    const known = new Set(hits.map((h) => h.id));
+    hits.push(...people.filter((p) => !known.has(p.id) && [p.title, ...(p.aliases ?? [])].some((n) => words.has(first(n)))).map((p) => ({ id: p.id, count: 0, score: score(p) })).sort((a, b) => b.score - a.score));
   }
   const prev = prevCid && model.chapters[prevCid] ? model.chapters[prevCid].characters : [];
   const ids = [...new Set([...hits.map((h) => h.id), ...prev])].filter((id) => model.entities[id]);
@@ -69,7 +72,7 @@ export function contextPack(model, { cid, sourcePath, sourceText, forWho = 'char
   const lines = [`# Context for ${cid}`, `Source ${model.genealogy ? 'file' : 'chapter'}: ${sourcePath}`, `World: ${model.world} (use this exact name as the entity for world-wide rules)`, ''];
   if (!ids.length) lines.push('_No existing notes match this chapter yet. Everything you find is new._', '');
   if (forWho === 'characters') {
-    if (chars.length) lines.push('## Known characters in or around this chapter', ...chars.slice(0, 40).map((id) => digest(model, model.entities[id], { full: true })), '');
+    if (chars.length) lines.push('## Known characters in or around this chapter', ...chars.slice(0, model.genealogy ? 80 : 40).map((id) => digest(model, model.entities[id], { full: true })), '');
     const events = Object.values(model.entities).filter((e) => e.type === 'event').map((e) => e.title);
     if (events.length) lines.push('## Event names so far (reuse exact names)', events.slice(-60).join(' · '), '');
   } else {
@@ -80,7 +83,7 @@ export function contextPack(model, { cid, sourcePath, sourceText, forWho = 'char
     if (terms.length) lines.push('## Glossary terms already recorded', terms.slice(-80).join(' · '), '');
   }
   const allNames = Object.values(model.entities).filter((e) => ENTITY_TYPES.has(e.type) && e.type !== 'event' && !['Glossary', 'Chronology'].includes(e.title) && !/^Chronology of /.test(e.title)).map((e) => e.title);
-  lines.push(`## All known names (${allNames.length}), use these spellings to link`, allNames.slice(0, 400).join(' · '));
+  lines.push(`## All known names (${allNames.length}), use these spellings to link`, allNames.slice(0, model.genealogy ? 2000 : 400).join(' · '));
   return lines.join('\n');
 }
 

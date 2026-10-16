@@ -7,6 +7,7 @@
   import { relationsAt, colorOf, describe, KIN_KINDS } from '../lib/relations.js';
   import { kinIndex, lifespan, lifeLine, ageAt, ageLabel } from '../lib/kin.js';
   import { parseDate } from '../lib/dates.js';
+  import FollowPicker from '../components/FollowPicker.svelte';
 
   // genealogy: people are compared by life and family, not by who they like
   const gen = $derived(!!store.model.genealogy);
@@ -52,9 +53,7 @@
         {#if mode === 'full'}<label class="small">Show <select bind:value={maxFull}><option value={25}>25</option><option value={45}>45</option><option value={90}>90</option><option value={9999}>everyone</option></select></label>{/if}
       {/if}
       {#if mode === 'ego'}
-        <label class="small">Focus
-          <select bind:value={focus}>{#each chars as c (c.id)}<option value={c.id}>{c.title}</option>{/each}</select>
-        </label>
+        <label class="small focus">Focus <FollowPicker selected={focus} onpick={(id) => (focus = id)} clearable={false} placeholder="search names…" label="Focus a person in the people graph" /></label>
         <label class="small">Hops <select bind:value={hops}><option value={1}>1</option><option value={2}>2</option></select></label>
       {/if}
     {/if}

@@ -27,7 +27,7 @@ Books become **living worlds** in an Obsidian vault (`book-universe/`). You can 
 This repo (the tool) is the only thing pushed to GitHub. `.gitignore` and `tools/hooks/root/pre-push` keep world content and book files out of it.
 
 ## The `vault` tool (deterministic, zero tokens)
-`node tools/vault.mjs plan | context | apply | lint | briefing | done | init-world | add-story | import-books | add-archive | add-media`. Agents understand and write patches, and this tool does everything else: writing notes in exact format, verbatim quote checks, two-sided relations, continuity lint, spoiler-safe `/become` briefings, progress and commits. Patch format: `SCHEMA.md › Patches`.
+`node tools/vault.mjs plan | context | apply | lint | briefing | done | init-world | add-story | import-books | add-archive | add-media | merge`. Agents understand and write patches, and this tool does everything else: writing notes in exact format, verbatim quote checks, two-sided relations, continuity lint, spoiler-safe `/become` briefings, progress and commits. Patch format: `SCHEMA.md › Patches`.
 
 ## Commands
 - **Start:** `/start` gives guided onboarding to a first world.

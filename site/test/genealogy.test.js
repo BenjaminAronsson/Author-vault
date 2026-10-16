@@ -122,6 +122,18 @@ describe('apply in a genealogy world', () => {
     apply({ entities: [{ name: 'Alma Andersdotter (1801–1850)', type: 'character', aliases: ['Alma Andersdotter'] }] }, 'arkiv-C02');
     expect(existsSync(join(dir, 'Characters/Alma Andersdotter (1801–1850)/Alma Andersdotter (1801–1850).md'))).toBe(true);
   });
+  it('a name with a colon ("Kerstin (VIII:40)") is one note, linked by its file name, never rewritten', () => {
+    const r = apply({
+      entities: [{ name: 'Kerstin (VIII:40)', type: 'character' }, { name: 'Anders Persson (1666–1741)', type: 'character' }],
+      timeline: [{ entity: 'Kerstin (VIII:40)', date: '1690', text: 'Gifter sig.' }],
+      kin: [{ a: 'Anders Persson (1666–1741)', b: 'Kerstin (VIII:40)', kind: 'spouse' }],
+    });
+    const kerstin = read('Characters/Kerstin (VIII40)/Kerstin (VIII40).md');
+    expect(kerstin).toContain('Gifter sig.');
+    expect(kerstin).toMatch(/^spouses: \["\[\[Anders Persson \(1666–1741\)\]\]"\]$/m);
+    expect(read('Characters/Anders Persson (1666–1741)/Anders Persson (1666–1741).md')).toContain('[[Kerstin (VIII40)]]');
+    expect(r.created.filter((p) => p.includes('Kerstin')).length).toBe(2); // note + voice, once
+  });
   it('book worlds are unchanged: the marker stays the chapter', () => {
     expect(timelineLine('B1-C03', { text: 'x' })).toBe('- **B1-C03** · `pov:objective` · x ([[B1-C03]])');
   });
@@ -210,6 +222,16 @@ describe('context pack for an archive source', () => {
     const pack = contextPack(model(), { cid: 'arkiv-C02', sourcePath: '_sources/arkiv/C02.md', sourceText: 'Mormor Anna berättade alltid att hon var född på midsommardagen.' });
     expect(pack).toContain('Source file:');
     expect(pack).toMatch(/### Anna Persdotter \(1843–1910\) \(character\).*\n- född 1843-05-12 · föräldrar: Per Andersson \(1812–1867\)/);
+  });
+  it('puts the person the source names in full before many namesakes', async () => {
+    const { contextPack } = await import('../src/vault/context.js');
+    apply({ entities: [
+      ...Array.from({ length: 90 }, (_, i) => ({ name: `Anna Andersdotter (${1700 + i})`, type: 'character' })),
+      { name: 'Anna Britta Bengtsdotter (1801–1850)', type: 'character' },
+    ] });
+    const pack = contextPack(model(), { cid: 'arkiv-C02', sourcePath: '_sources/arkiv/C02.md', sourceText: 'Anna Britta Bengtsdotter föddes 1801.' });
+    expect(pack).toContain('### Anna Britta Bengtsdotter (1801–1850)');
+    expect(pack).toMatch(/All known names \(9\d+\).*Anna Britta Bengtsdotter \(1801–1850\)/s);
   });
 });
 
@@ -378,5 +400,54 @@ describe('photos', () => {
     apply(p); apply(p);
     expect(read('Media/Per vid ladan.md')).toContain('depicts: ["[[Per Andersson (1812–1867)]]"]');
     expect(existsSync(join(dir, 'Media/Per vid ladan 2.md'))).toBe(false);
+  });
+});
+
+describe('merge', () => {
+  it('folds one person into another: facts, kin, timeline, links, voice, nothing lost', async () => {
+    const { mergeNotes } = await import('../src/vault/merge.js');
+    apply({
+      entities: [
+        { name: 'Elin Månsdotter (1703–1777)', type: 'character', fields: { born: '1703-02-08', died: '1777-01-01' } },
+        { name: 'Elin Månsdotter (VIII:98)', type: 'character', aliases: ['Elin Månsdotter i Sandhult'], fields: { born: '1703-02-08', died: '1777-01-02' } },
+        { name: 'Gabriel Johansson (1700–1738)', type: 'character' },
+        { name: 'Måns Andersson (1705–1780)', type: 'character' },
+        { name: 'Anna Månsdotter (1742)', type: 'character' },
+        { name: 'Sandhult', type: 'location' }, { name: 'Sandhult socken', type: 'location' },
+      ],
+      timeline: [
+        { entity: 'Elin Månsdotter (1703–1777)', date: '1726', text: 'Gifter sig med Gabriel.', at: 'Sandhult' },
+        { entity: 'Elin Månsdotter (VIII:98)', date: '1740-12-03', text: 'Gifter sig med Måns.', at: 'Sandhult socken' },
+        { entity: 'Elin Månsdotter (VIII:98)', date: '1703-02-08', text: 'Föds.' },
+      ],
+      kin: [
+        { a: 'Gabriel Johansson (1700–1738)', b: 'Elin Månsdotter (1703–1777)', kind: 'spouse' },
+        { a: 'Måns Andersson (1705–1780)', b: 'Elin Månsdotter (VIII:98)', kind: 'spouse' },
+        { a: 'Elin Månsdotter (VIII:98)', b: 'Anna Månsdotter (1742)', kind: 'parent' },
+      ],
+    });
+    const w = new World(dir, TPL);
+    const r = mergeNotes(w, 'Elin Månsdotter (1703–1777)', 'Elin Månsdotter (VIII:98)', { why: 'same dates, two ancestor numbers' });
+    const keep = read('Characters/Elin Månsdotter (1703–1777)/Elin Månsdotter (1703–1777).md');
+    expect(existsSync(join(dir, 'Characters/Elin Månsdotter (VIII98)'))).toBe(false);
+    expect(keep).toMatch(/^aliases: \[.*"Elin Månsdotter \(VIII98\)".*\]$/m);
+    expect(keep).toMatch(/^aliases: \[.*"Elin Månsdotter i Sandhult".*\]$/m);
+    expect(keep).toMatch(/^spouses: \["\[\[Gabriel Johansson \(1700–1738\)\]\]", "\[\[Måns Andersson \(1705–1780\)\]\]"\]$/m);
+    expect(keep).toMatch(/^children: \["\[\[Anna Månsdotter \(1742\)\]\]"\]$/m);
+    expect(keep).not.toContain('Characters/Elin Månsdotter (VIII98)/');
+    expect(keep).toContain('Föds.');
+    expect(keep.indexOf('Föds.')).toBeLessThan(keep.indexOf('Gifter sig med Gabriel.')); // timeline stays in date order
+    expect(keep).toContain('Gifter sig med Måns.');
+    expect(keep).toContain('[!warning] Contradiction · died: "1777-01-01" (kept) vs "1777-01-02"');
+    expect(keep).toContain('"Elin Månsdotter (VIII98)" was the same entity: same dates, two ancestor numbers');
+    expect(keep.match(/\| \[\[Måns Andersson \(1705–1780\)\]\] \|/g)).toHaveLength(1);
+    expect(read('Characters/Anna Månsdotter (1742)/Anna Månsdotter (1742).md')).toMatch(/^parents: \["\[\[Elin Månsdotter \(1703–1777\)\]\]"\]$/m);
+    expect(read('Characters/Måns Andersson (1705–1780)/Måns Andersson (1705–1780).md')).not.toContain('VIII98');
+    expect(r.relinked).toBeGreaterThanOrEqual(2);
+    // places: the timeline's at: tags follow
+    mergeNotes(new World(dir, TPL), 'Sandhult socken', 'Sandhult');
+    expect(existsSync(join(dir, 'Places/Sandhult.md'))).toBe(false);
+    expect(read('Characters/Elin Månsdotter (1703–1777)/Elin Månsdotter (1703–1777).md')).not.toContain('[[Sandhult]]');
+    expect(read('Places/Sandhult socken.md')).toMatch(/^aliases: \[.*"Sandhult".*\]$/m);
   });
 });
