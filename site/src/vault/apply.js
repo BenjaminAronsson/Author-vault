@@ -25,6 +25,15 @@ const HEADERS = {
 export const canonName = (s) => String(s).replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
 const safeName = (s) => canonName(s).replace(/[\\/:*?"<>|#^[\]]/g, '').trim();
 const link = (n) => `[[${canonName(n)}]]`;
+const lifeYear = (s) => String(s).match(/\((\d{3,4})\b[^)]*\)\s*$/)?.[1];
+/** The note an entity means: its own name, else one of its aliases, unless that note carries other life years
+ *  ("Alma Andersdotter (1801–1850)" is not "Alma Andersdotter (1873–1957)"). Genealogy passes no bare given names: namesakes share them. */
+function findEntity(world, name, aliases) {
+  const own = world.find(name);
+  if (own) return own;
+  const y = lifeYear(name);
+  return aliases.map((a) => world.find(a)).find((p) => p && !(y && lifeYear(p.replace(/\.md$/, '')) && lifeYear(p.replace(/\.md$/, '')) !== y)) ?? null;
+}
 /** Timeline marker for facts without a date in a genealogy world. */
 export const UNDATED = 'odaterat';
 const DATE_FIELDS = new Set(['born', 'died', 'date', 'in_world']);
@@ -71,8 +80,8 @@ export class World {
     return existsSync(f) ? readFileSync(f, 'utf8') : `---\ntype: ${type}\n---\n# {{Name}}\n`;
   }
   /** Path of the note for `name`, creating it from the template if missing. */
-  ensure(name, type, { cid, canon = 'book', aliases = [], fields = {} } = {}) {
-    const found = this.find(name) ?? aliases.map((a) => this.find(a)).find(Boolean);
+  ensure(name, type, { cid, canon = 'book', aliases = [], fields = {}, match } = {}) {
+    const found = match !== undefined ? match : this.find(name) ?? aliases.map((a) => this.find(a)).find(Boolean);
     if (found) return found;
     const n = safeName(name);
     const rel = type === 'character' ? `Characters/${n}/${n}.md` : `${TYPE_DIR[type] ?? 'Concepts'}/${n}.md`;
@@ -193,10 +202,14 @@ export function applyPatch(world, patch, opts) {
 
   const genealogy = isGenealogy(world);
   // entities first (types, aliases, fields)
+  // an alias two entities of this patch both claim ("Alma") names neither of them
+  const claims = {};
+  for (const e of patch.entities ?? []) for (const a of new Set((e.aliases ?? []).map((a) => canonName(a).toLowerCase()))) claims[a] = (claims[a] ?? 0) + 1;
   for (const e of patch.entities ?? []) {
-    const existed = world.find(e.name) ?? (e.aliases ?? []).map((a) => world.find(a)).find(Boolean);
-    const rel = world.ensure(e.name, e.type ?? 'character', { cid, canon, aliases: e.aliases ?? [], fields: e.fields ?? {} });
-    world.touchFrontmatter(rel, { aliases: e.aliases ?? [], cid });
+    const aliases = (e.aliases ?? []).filter((a) => claims[canonName(a).toLowerCase()] < 2);
+    const existed = findEntity(world, e.name, genealogy ? aliases.filter((a) => /\s/.test(canonName(a))) : aliases);
+    const rel = world.ensure(e.name, e.type ?? 'character', { cid, canon, aliases, fields: e.fields ?? {}, match: existed });
+    world.touchFrontmatter(rel, { aliases, cid });
     // a later source adds facts (a death date) to a known person: fill empty fields, never overwrite; a different value is a contradiction
     if (genealogy && existed) for (const [k, v] of Object.entries(e.fields ?? {})) {
       if (v === '' || v == null) continue;

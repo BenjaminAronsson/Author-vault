@@ -107,6 +107,21 @@ describe('apply in a genealogy world', () => {
     expect(anna).toContain('> [!warning] Contradiction · born: "1843-05-12" (kept) vs "midsommardagen 1844" ([[arkiv-C02]])');
     expect(r.warnings.join()).toMatch(/contradiction/);
   });
+  it('a shared given-name alias does not merge two namesakes', () => {
+    const r = apply({ entities: [
+      { name: 'Alma Odalia Persdotter (1866–1940)', type: 'character', aliases: ['Alma Odalia', 'Alma'], fields: { born: '1866-08-25', died: '1940-10-27' } },
+      { name: 'Alma Andersdotter (1873–1957)', type: 'character', aliases: ['Alma Johansson', 'Alma'], fields: { born: '1873-09-10', died: '1957-03-10' } },
+    ] });
+    const odalia = read('Characters/Alma Odalia Persdotter (1866–1940)/Alma Odalia Persdotter (1866–1940).md');
+    const andersdotter = read('Characters/Alma Andersdotter (1873–1957)/Alma Andersdotter (1873–1957).md');
+    expect(andersdotter).toMatch(/^born: "1873-09-10"$/m);
+    expect(odalia).not.toContain('[!warning] Contradiction');
+    expect(odalia).not.toContain('Alma Johansson');
+    expect(r.warnings.join()).not.toMatch(/contradiction/);
+    // a later source naming her with other life years is someone else, even with a matching full-name alias
+    apply({ entities: [{ name: 'Alma Andersdotter (1801–1850)', type: 'character', aliases: ['Alma Andersdotter'] }] }, 'arkiv-C02');
+    expect(existsSync(join(dir, 'Characters/Alma Andersdotter (1801–1850)/Alma Andersdotter (1801–1850).md'))).toBe(true);
+  });
   it('book worlds are unchanged: the marker stays the chapter', () => {
     expect(timelineLine('B1-C03', { text: 'x' })).toBe('- **B1-C03** · `pov:objective` · x ([[B1-C03]])');
   });
